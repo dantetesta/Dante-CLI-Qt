@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "dante-cli",
+  "version-string": "0.7.0",
+  "description": "Dante CLI - premium terminal with AI integration (C++20 + Qt6)",
+  "homepage": "https://dantetesta.com.br/dante-cli",
+  "license": "MIT",
+  "supports": "windows & x64",
+  "dependencies": [
+    "nlohmann-json",
+    "spdlog",
+    "simdjson",
+    "sqlite3",
+    {
+      "name": "catch2",
+      "host": false
+    }
+  ],
+  "builtin-baseline": "2025-01-15"
+}

@@ -1,0 +1,29 @@
+# Core domain — pure C++ that knows nothing about UI.
+add_library(dante-core STATIC
+    persistence/JsonStore.cpp
+    persistence/JsonStore.h
+    persistence/AppPaths.cpp
+    persistence/AppPaths.h
+    terminal/TerminalSession.cpp
+    terminal/TerminalSession.h
+    terminal/TerminalRegistry.cpp
+    terminal/TerminalRegistry.h
+    ai/GroqClient.cpp
+    ai/GroqClient.h
+    domain/Models.h
+    domain/EventBus.cpp
+    domain/EventBus.h
+    telemetry/Logger.cpp
+    telemetry/Logger.h
+)
+
+target_include_directories(dante-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(dante-core PUBLIC
+    Qt6::Core Qt6::Network Qt6::Sql Qt6::Concurrent
+)
+
+set_target_properties(dante-core PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    AUTOMOC ON
+)
