@@ -27,10 +27,13 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QQmlApplicationEngine>
+#include <QQmlComponent>
 #include <QQmlContext>
+#include <QQmlError>
 #include <QQuickStyle>
 #include <QIcon>
 #include <QStandardPaths>
+#include <QStringList>
 #include <QTimer>
 #include <QWindow>
 #include <qqml.h>
@@ -39,7 +42,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.13");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.15");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -132,22 +135,39 @@ int main(int argc, char* argv[]) {
     // network probe doesn't delay window-show).
     QTimer::singleShot(2000, updater, &dante::UpdateController::checkNow);
 
+    // Capture every QML parse / import error the engine reports so the
+    // MessageBox can show the *real* reason instead of a generic "falhou".
+    // alpha.13 only surfaced "Main.qml failed" with no context, which made
+    // remote debugging impossible. Listening on the warnings signal hits
+    // all imports + parsers (Component-level objectCreationFailed misses
+    // import errors that happen before the type system even resolves).
+    QStringList qmlErrors;
+    QObject::connect(&engine, &QQmlApplicationEngine::warnings, &app,
+        [&qmlErrors](const QList<QQmlError>& list) {
+            for (const auto& e : list) {
+                const QString s = e.toString();
+                qCritical().noquote() << "[qml]" << s;
+                qmlErrors.append(s);
+            }
+        });
+
     engine.loadFromModule("dante.ui", "Main");
     if (engine.rootObjects().isEmpty()) {
         qCritical() << "Failed to load Main.qml";
-        // Pre-alpha.13 a missing Qt plugin would crash *here* with no UI
-        // feedback (just exit -1) — the user reports it as "não abriu". A
-        // QMessageBox surfaces *something* before we bail, plus a hint where
-        // to find the structured log so we can debug remotely.
         const QString logDir =
             QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/logs";
+        // First few errors are usually the cause; later ones are cascade
+        // damage. Show the top 6 in the MessageBox; full list is in the log.
+        QString first;
+        if (!qmlErrors.isEmpty()) {
+            first = "\n\nErros do Qt (primeiros 6):\n• "
+                  + qmlErrors.mid(0, 6).join("\n• ");
+        }
         QMessageBox::critical(
             nullptr,
             "Dante CLI",
-            "Falha ao carregar a interface (Main.qml).\n\n"
-            "Geralmente isso significa que algum plugin do Qt está faltando "
-            "(qwindows.dll em platforms/, Qt6Multimedia.dll, etc.).\n\n"
-            "Veja o log em:\n" + logDir);
+            "Falha ao carregar a interface (Main.qml)." + first +
+            "\n\nLog completo:\n" + logDir);
         return -1;
     }
 

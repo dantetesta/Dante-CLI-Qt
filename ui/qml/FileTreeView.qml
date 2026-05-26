@@ -8,8 +8,9 @@
 import QtQuick 6.5
 import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
-import Qt.labs.platform 1.1 as Labs
 import "."
+// Qt.labs.platform was imported here but never used; it was breaking on
+// Windows in Qt 6.7 where the QML module isn't deployed by default.
 
 Item {
     id: root

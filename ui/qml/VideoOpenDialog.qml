@@ -7,9 +7,8 @@
 // user explicitly wants them.
 import QtQuick 6.5
 import QtQuick.Controls 6.5
-import QtQuick.Dialogs
+import QtQuick.Dialogs   // Qt 6 — replaces Qt.labs.platform
 import QtQuick.Layouts 6.5
-import Qt.labs.platform 1.1 as Labs
 import "."
 
 MovablePopup {
@@ -135,13 +134,13 @@ MovablePopup {
         }
     }
 
-    Labs.FileDialog {
+    FileDialog {
         id: fileDlg
         title: qsTr("Selecionar vídeo")
         nameFilters: [qsTr("Vídeos (*.mp4 *.mov *.m4v *.avi *.mkv *.webm)"), qsTr("Todos (*)")]
         onAccepted: {
-            const f = file.toString()  // QUrl → string with file:// prefix
-            urlField.text = f
+            // Qt 6 QtQuick.Dialogs.FileDialog exposes `selectedFile` (QUrl).
+            urlField.text = selectedFile.toString()
         }
     }
 }
