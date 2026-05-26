@@ -7,6 +7,17 @@ oficial em Swift (macOS) e do antigo MVP em Tauri.
 > mas **sem ConPTY real** ainda (usa `QProcess` — apps tipo `vim`/`htop` não
 > renderizam direito). Veja a seção "Gaps conhecidos" abaixo.
 
+## Download (instalador Windows x64)
+
+**Release atual:** [`v0.7.0-alpha.3`](https://github.com/dantetesta/Dante-CLI-Qt/releases/tag/v0.7.0-alpha.3) — 48 MB
+
+[**▶ Baixar Dante-CLI-Setup-0.7.0-x64.exe**](https://github.com/dantetesta/Dante-CLI-Qt/releases/download/v0.7.0-alpha.3/Dante-CLI-Setup-0.7.0-x64.exe)
+
+> Sem assinatura de código ainda — o SmartScreen do Windows vai pedir confirmação
+> ("Mais informações → Executar assim mesmo"). Resolver isso exige certificado
+> EV ou submeter o binário ao Microsoft Defender pra reputação.
+
+
 ---
 
 ## Por que mudei de stack
