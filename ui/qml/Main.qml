@@ -20,6 +20,11 @@ ApplicationWindow {
     // Persist sidebar width when user resizes.
     property int  sidebarWidth: appState.sidebarWidth
 
+    // SPEC-142 — focus mode. Hides sidebar + tab bar + bottom toolbar so
+    // the terminal owns the whole window. Toggle via the pill (when on) or
+    // the ⌘. / Ctrl+. shortcut.
+    property bool focusMode: false
+
     onClosing: appState.saveOnClose()
 
     RowLayout {
@@ -42,14 +47,16 @@ ApplicationWindow {
         // ───── Left sidebar ─────
         Sidebar {
             id: sidebar
-            Layout.preferredWidth: root.sidebarWidth
+            visible: !root.focusMode
+            Layout.preferredWidth: root.focusMode ? 0 : root.sidebarWidth
             Layout.minimumWidth:   220
             Layout.maximumWidth:   560
             Layout.fillHeight:     true
 
-            // Animate programmatic width changes (collapse toggle, snap, etc).
-            // Drag updates pass through every onPositionChanged tick so the
-            // splitter still feels 1:1 with the mouse.
+            // Animate programmatic width changes (collapse toggle, focus
+            // mode, snap, etc). Drag updates pass through every
+            // onPositionChanged tick so the splitter still feels 1:1 with
+            // the mouse.
             Behavior on Layout.preferredWidth {
                 NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
@@ -101,6 +108,11 @@ ApplicationWindow {
 
             TabBar {
                 Layout.fillWidth: true
+                visible: !root.focusMode
+                Layout.preferredHeight: root.focusMode ? 0 : 40
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic }
+                }
             }
 
             // The active terminal pane fills the remaining space.
@@ -112,6 +124,11 @@ ApplicationWindow {
 
             BottomToolbar {
                 Layout.fillWidth: true
+                visible: !root.focusMode
+                Layout.preferredHeight: root.focusMode ? 0 : 42
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic }
+                }
             }
         }
     }
@@ -159,6 +176,45 @@ ApplicationWindow {
     // ───── Cheatsheet (Ctrl+/) — SPEC-140 ─────
     CheatsheetView {
         id: cheatsheet
+    }
+
+    // ───── About — SPEC-141 ─────
+    AboutView {
+        id: aboutView
+    }
+
+    // ───── Focus mode "Sair" pill — SPEC-142 ─────
+    Rectangle {
+        id: focusPill
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 14
+        visible: root.focusMode
+        opacity: visible ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic } }
+        z: 9999
+        width: pillLabel.implicitWidth + 28
+        height: 28
+        radius: 14
+        color: pillMa.containsMouse ? Theme.accent : Theme.accentDim
+        border.color: Theme.accentSoft
+        border.width: 1
+        Text {
+            id: pillLabel
+            anchors.centerIn: parent
+            text: "↗  " + qsTr("Sair do foco (⌘.)")
+            color: pillMa.containsMouse ? "white" : Theme.accent
+            font.family: Theme.fontSans
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+        }
+        MouseArea {
+            id: pillMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.focusMode = false
+        }
     }
 
     // Wire AI → terminal injection.
@@ -220,6 +276,58 @@ ApplicationWindow {
     Shortcut {
         sequences: ["Ctrl+/", "Ctrl+Shift+/", "F1"]
         onActivated: cheatsheet.opened ? cheatsheet.close() : cheatsheet.open()
+    }
+    // SPEC-142 — focus mode toggle (Cmd+. / Ctrl+.).
+    Shortcut { sequence: "Ctrl+.";       onActivated: root.focusMode = !root.focusMode }
+    Shortcut { sequence: "Ctrl+Shift+F"; onActivated: root.focusMode = !root.focusMode }
+    // SPEC-141 — About window.
+    Shortcut {
+        sequences: ["F2"]
+        onActivated: aboutView.opened ? aboutView.close() : aboutView.open()
+    }
+
+    // ─── SPEC-090 batch (closes 091..098) ───
+    // Cmd+D / Cmd+Shift+D — Swift-compat aliases for split shortcuts.
+    Shortcut { sequence: "Ctrl+D";       onActivated: appState.splitActive("vertical") }
+    Shortcut { sequence: "Ctrl+Shift+D"; onActivated: appState.splitActive("horizontal") }
+    // Cmd+1..9 — jump to tab N.
+    Shortcut { sequence: "Ctrl+1"; onActivated: appState.selectTab(tabs.data(tabs.index(0,0), 0x101)) }
+    Shortcut { sequence: "Ctrl+2"; onActivated: { if (tabs.rowCount() >= 2) appState.selectTab(tabs.data(tabs.index(1,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+3"; onActivated: { if (tabs.rowCount() >= 3) appState.selectTab(tabs.data(tabs.index(2,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+4"; onActivated: { if (tabs.rowCount() >= 4) appState.selectTab(tabs.data(tabs.index(3,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+5"; onActivated: { if (tabs.rowCount() >= 5) appState.selectTab(tabs.data(tabs.index(4,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+6"; onActivated: { if (tabs.rowCount() >= 6) appState.selectTab(tabs.data(tabs.index(5,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+7"; onActivated: { if (tabs.rowCount() >= 7) appState.selectTab(tabs.data(tabs.index(6,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+8"; onActivated: { if (tabs.rowCount() >= 8) appState.selectTab(tabs.data(tabs.index(7,0), 0x101)) } }
+    Shortcut { sequence: "Ctrl+9"; onActivated: { if (tabs.rowCount() >= 9) appState.selectTab(tabs.data(tabs.index(8,0), 0x101)) } }
+    // Sidebar toggles.
+    Shortcut {
+        sequence: "Ctrl+Shift+S"
+        onActivated: root.sidebarWidth = (root.sidebarWidth > 0 ? 0 : 280)
+    }
+    Shortcut {
+        sequence: "Ctrl+]"
+        onActivated: appState.rightSidebarVisible = !appState.rightSidebarVisible
+    }
+    // Cmd+L — focus the favorites/files search field (best-effort: also
+    // flips sidebar to Favorites mode so the field is visible).
+    Shortcut {
+        sequence: "Ctrl+L"
+        onActivated: { appState.sidebarMode = 0; /* TODO: forwardFocus to search field */ }
+    }
+    // Cmd+Ctrl+M (Swift) → Ctrl+Shift+M on Windows — toggle mic recording.
+    Shortcut {
+        sequences: ["Ctrl+Shift+M", "Ctrl+Meta+M"]
+        onActivated: { if (typeof voice !== "undefined" && voice) voice.toggleRecording() }
+    }
+    // Cmd+Shift+K — clear current terminal line (send ANSI EL2 + CR).
+    Shortcut {
+        sequence: "Ctrl+Shift+K"
+        onActivated: {
+            if (appState.activeTabId) {
+                terminal.write(appState.activeTabId, "[2K\r")
+            }
+        }
     }
 
     // ─── Split-pane shortcuts ───────────────────────────────────────────

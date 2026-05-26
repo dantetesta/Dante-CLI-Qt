@@ -39,7 +39,7 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  PaneView SplitContainer CommandPalette VoiceWidget
                  UpdateBanner LayoutDesigner SettingsPanel
                  EmptySlot VideoOpenDialog GridWorkspace FileTreeView
-                 MovablePopup CheatsheetView)
+                 MovablePopup CheatsheetView AboutView)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -83,6 +83,7 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/FileTreeView.qml
         ../../ui/qml/MovablePopup.qml
         ../../ui/qml/CheatsheetView.qml
+        ../../ui/qml/AboutView.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml
