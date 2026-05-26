@@ -88,6 +88,17 @@ ApplicationWindow {
             Layout.fillHeight: true
             spacing: 0
 
+            // Autoupdate banner — sits above the tab bar; collapses when no
+            // update is available so it doesn't steal vertical space.
+            UpdateBanner {
+                id: updateBanner
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? 44 : 0
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic }
+                }
+            }
+
             TabBar {
                 Layout.fillWidth: true
             }

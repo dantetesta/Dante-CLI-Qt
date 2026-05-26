@@ -19,6 +19,8 @@ add_library(dante-core STATIC
     themes/ThemeRegistry.h
     ai/GroqClient.cpp
     ai/GroqClient.h
+    update/UpdateChecker.cpp
+    update/UpdateChecker.h
     domain/Models.h
     domain/EventBus.cpp
     domain/EventBus.h

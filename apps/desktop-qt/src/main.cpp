@@ -16,25 +16,32 @@
 #include "AIController.h"
 #include "PaletteController.h"
 #include "VoiceController.h"
+#include "UpdateController.h"
+#include "TrayController.h"
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QTimer>
+#include <QWindow>
 #include <qqml.h>
 
 int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.8");
 
-    QGuiApplication app(argc, argv);
-    QGuiApplication::setWindowIcon(QIcon(":/icons/app.png"));
+    // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
+    // context menu uses QMenu, which is a QWidget. Linking Widgets is already
+    // there for the same reason (Fusion style on QML controls).
+    QApplication app(argc, argv);
+    QApplication::setWindowIcon(QIcon(":/icons/app.png"));
     QQuickStyle::setStyle("Fusion");
 
     dante::telemetry::install();
@@ -57,6 +64,7 @@ int main(int argc, char* argv[]) {
     // QNetworkAccessManager so the chat round-trip can't stall mic uploads).
     auto* voice      = new dante::VoiceController(appState, /*groq*/ nullptr, &app);
     auto* schemes    = new dante::themes::ThemeRegistry(&app);
+    auto* updater    = new dante::UpdateController(&app);
 
     appState->hydrate();
     favorites->hydrate();
@@ -110,11 +118,24 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("voice",      voice);
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);
+    engine.rootContext()->setContextProperty("updater",    updater);
+
+    // Kick off a first update check after the UI is up (deferred so a slow
+    // network probe doesn't delay window-show).
+    QTimer::singleShot(2000, updater, &dante::UpdateController::checkNow);
 
     engine.loadFromModule("dante.ui", "Main");
     if (engine.rootObjects().isEmpty()) {
         qCritical() << "Failed to load Main.qml";
         return -1;
     }
+
+    // System tray. Built after the root object exists so we can attach the
+    // ApplicationWindow for the show/hide toggle.
+    auto* tray = new dante::TrayController(appState, updater, &app);
+    if (auto* win = qobject_cast<QWindow*>(engine.rootObjects().first())) {
+        tray->attachWindow(win);
+    }
+
     return app.exec();
 }
