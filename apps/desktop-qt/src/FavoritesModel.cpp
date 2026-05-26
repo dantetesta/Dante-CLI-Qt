@@ -22,6 +22,7 @@ void FavoritesModel::hydrate() {
         f.path  = o.value("path").toString();
         f.emoji = o.value("emoji").toString();
         f.colorHex = o.value("colorHex").toString();
+        f.initialCommand = o.value("initialCommand").toString();
         const auto tags = o.value("tags").toArray();
         for (const auto& t : tags) f.tags.append(t.toString());
         items_.append(f);
@@ -65,6 +66,54 @@ void FavoritesModel::add(const QString& name, const QString& path, const QString
     persist();
 }
 
+void FavoritesModel::addFull(const QVariantMap& props) {
+    beginInsertRows({}, items_.size(), items_.size());
+    Favorite f;
+    f.id   = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    f.name = props.value("name").toString();
+    f.path = props.value("path").toString();
+    f.emoji = props.value("emoji").toString();
+    f.colorHex = props.value("colorHex", "#0A84FF").toString();
+    f.initialCommand = props.value("initialCommand").toString();
+    for (const auto& t : props.value("tags").toStringList()) f.tags.append(t);
+    items_.append(f);
+    endInsertRows();
+    persist();
+}
+
+void FavoritesModel::update(const QString& id, const QVariantMap& props) {
+    for (int i = 0; i < items_.size(); ++i) {
+        if (items_[i].id != id) continue;
+        auto& f = items_[i];
+        if (props.contains("name"))  f.name  = props.value("name").toString();
+        if (props.contains("path"))  f.path  = props.value("path").toString();
+        if (props.contains("emoji")) f.emoji = props.value("emoji").toString();
+        if (props.contains("colorHex")) f.colorHex = props.value("colorHex").toString();
+        if (props.contains("initialCommand")) f.initialCommand = props.value("initialCommand").toString();
+        if (props.contains("tags")) {
+            f.tags.clear();
+            for (const auto& t : props.value("tags").toStringList()) f.tags.append(t);
+        }
+        const auto idx = index(i);
+        emit dataChanged(idx, idx);
+        persist();
+        return;
+    }
+}
+
+QVariantMap FavoritesModel::get(const QString& id) const {
+    for (const auto& f : items_) {
+        if (f.id != id) continue;
+        return QVariantMap{
+            {"id", f.id}, {"name", f.name}, {"path", f.path},
+            {"emoji", f.emoji}, {"colorHex", f.colorHex},
+            {"initialCommand", f.initialCommand},
+            {"tags", QVariant::fromValue(QStringList(f.tags))},
+        };
+    }
+    return {};
+}
+
 void FavoritesModel::remove(const QString& id) {
     for (int i = 0; i < items_.size(); ++i) {
         if (items_[i].id == id) {
@@ -90,6 +139,7 @@ void FavoritesModel::persist() {
         arr.append(QJsonObject{
             {"id", f.id}, {"name", f.name}, {"path", f.path},
             {"emoji", f.emoji}, {"colorHex", f.colorHex}, {"tags", tags},
+            {"initialCommand", f.initialCommand},
         });
     }
     store_->scheduleWrite(QJsonDocument(arr));

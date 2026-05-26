@@ -1,18 +1,20 @@
-// OS adapter — spawns a shell with PTY semantics.
-// Windows: real ConPTY via Win32 (CreatePseudoConsole + STARTUPINFOEX).
-// macOS/Linux: forkpty().
+// OS adapter — spawns a shell with REAL PTY semantics.
 //
-// MVP NOTE: this version uses QProcess on all platforms (no PTY).
-// That means apps like vim/htop won't render correctly. Replacing the
-// internals with ConPTY/forkpty is a self-contained follow-up; the
-// `ShellAdapter` API surface won't change.
+//   - Windows: `ConPtyAdapter` (CreatePseudoConsole + STARTUPINFOEXW)
+//   - macOS / Linux: `UnixPtyAdapter` (forkpty + ioctl(TIOCSWINSZ))
+//
+// This class is now a thin facade that owns a concrete `IPtyAdapter` chosen
+// at construction time. The public surface is preserved so existing callers
+// (TerminalSession etc.) compile without changes.
 
 #pragma once
 
 #include <QObject>
-#include <QProcess>
 #include <QString>
 #include <QByteArray>
+#include <memory>
+
+namespace dante::terminal { class IPtyAdapter; }
 
 namespace dante::infra {
 
@@ -35,12 +37,12 @@ signals:
 
 private:
     QString resolveShell(QString candidate) const;
-    QString sanitize(QString s) const;   // strip NUL bytes (Win11 dirs crate leak parity)
+    QString sanitize(QString s) const;   // strip NUL bytes (Win path parity)
 
-    QProcess proc_;
-    QString  error_;
-    int      cols_{80};
-    int      rows_{24};
+    std::unique_ptr<dante::terminal::IPtyAdapter> pty_;
+    QString error_;
+    int     cols_{80};
+    int     rows_{24};
 };
 
 } // namespace dante::infra

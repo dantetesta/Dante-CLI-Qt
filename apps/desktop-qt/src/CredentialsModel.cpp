@@ -2,6 +2,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QStringList>
+#include <QUuid>
 
 namespace dante {
 
@@ -20,6 +21,7 @@ void CredentialsModel::hydrate() {
         c.name = o.value("name").toString();
         c.kind = CredentialKind(o.value("kind").toInt(0));
         c.emoji = o.value("emoji").toString();
+        c.notes = o.value("notes").toString();
         for (const auto& f : o.value("fields").toArray()) {
             CredentialField fld;
             const auto fo = f.toObject();
@@ -31,6 +33,65 @@ void CredentialsModel::hydrate() {
         items_.append(c);
     }
     endResetModel();
+}
+
+static QVector<CredentialField> fieldsFromVariant(const QVariantList& list) {
+    QVector<CredentialField> out;
+    for (const auto& v : list) {
+        const auto m = v.toMap();
+        CredentialField f;
+        f.label = m.value("label").toString();
+        f.value = m.value("value").toString();
+        f.masked = m.value("masked").toBool();
+        out.append(f);
+    }
+    return out;
+}
+
+void CredentialsModel::add(const QString& name, int kind, const QString& emoji, const QVariantList& fields) {
+    beginInsertRows({}, items_.size(), items_.size());
+    Credential c;
+    c.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    c.name = name;
+    c.kind = CredentialKind(qBound(0, kind, 4));
+    c.emoji = emoji;
+    c.fields = fieldsFromVariant(fields);
+    items_.append(c);
+    endInsertRows();
+    persist();
+}
+
+void CredentialsModel::update(const QString& id, const QVariantMap& props) {
+    for (int i = 0; i < items_.size(); ++i) {
+        if (items_[i].id != id) continue;
+        auto& c = items_[i];
+        if (props.contains("name"))  c.name = props.value("name").toString();
+        if (props.contains("kind"))  c.kind = CredentialKind(qBound(0, props.value("kind").toInt(), 4));
+        if (props.contains("emoji")) c.emoji = props.value("emoji").toString();
+        if (props.contains("notes")) c.notes = props.value("notes").toString();
+        if (props.contains("fields")) c.fields = fieldsFromVariant(props.value("fields").toList());
+        const auto idx = index(i);
+        emit dataChanged(idx, idx);
+        persist();
+        return;
+    }
+}
+
+QVariantMap CredentialsModel::get(const QString& id) const {
+    for (const auto& c : items_) {
+        if (c.id != id) continue;
+        QVariantList fields;
+        for (const auto& f : c.fields) {
+            fields.append(QVariantMap{
+                {"label", f.label}, {"value", f.value}, {"masked", f.masked},
+            });
+        }
+        return QVariantMap{
+            {"id", c.id}, {"name", c.name}, {"kind", int(c.kind)},
+            {"emoji", c.emoji}, {"notes", c.notes}, {"fields", fields},
+        };
+    }
+    return {};
 }
 
 int CredentialsModel::rowCount(const QModelIndex& p) const { return p.isValid() ? 0 : items_.size(); }
@@ -83,7 +144,7 @@ void CredentialsModel::persist() {
         }
         arr.append(QJsonObject{
             {"id", c.id}, {"name", c.name}, {"kind", int(c.kind)},
-            {"emoji", c.emoji}, {"fields", fields},
+            {"emoji", c.emoji}, {"notes", c.notes}, {"fields", fields},
         });
     }
     store_->scheduleWrite(QJsonDocument(arr));

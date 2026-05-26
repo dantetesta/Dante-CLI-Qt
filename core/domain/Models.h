@@ -38,6 +38,15 @@ struct Tab {
     int     customFontSize{0};
 
     QString sessionId; // PTY session id (terminal only).
+
+    // Split-pane state (minimal 2-pane model, mirrors Swift sibling's
+    // common case — recursive nesting deliberately out of scope).
+    //   splitMode == ""           → single pane (only `sessionId`).
+    //   splitMode == "vertical"   → two panes side-by-side.
+    //   splitMode == "horizontal" → two panes stacked.
+    // Second pane uses `secondSessionId` (UUID-stable as `id + ":b"`).
+    QString splitMode;
+    QString secondSessionId;
 };
 
 // -----------------------------------------------------------------------------

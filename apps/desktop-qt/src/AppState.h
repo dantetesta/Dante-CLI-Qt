@@ -34,6 +34,20 @@ public:
     Q_INVOKABLE void closeTab(const QString& id);
     Q_INVOKABLE void selectTab(const QString& id);
 
+    /* ─── Split panes (max 2 per tab) ─── */
+    /// "" / "vertical" / "horizontal".
+    Q_INVOKABLE QString tabSplitMode(const QString& tabId) const;
+    /// First-pane session id (always == tab.sessionId).
+    Q_INVOKABLE QString tabPrimarySessionId(const QString& tabId) const;
+    /// Second-pane session id (empty when not split).
+    Q_INVOKABLE QString tabSecondSessionId(const QString& tabId) const;
+    /// Splits the active tab. `direction` ∈ {"vertical","horizontal",""}.
+    /// Empty string collapses back to a single pane (closes the b-pane).
+    Q_INVOKABLE void splitActive(const QString& direction);
+    /// Close one side of the split on the active tab. `side` ∈ {"a","b"}.
+    /// If "a" is closed, the b-session becomes the sole pane (re-keyed).
+    Q_INVOKABLE void closeActivePane(const QString& side);
+
     /* ─── Settings ─── */
     QString groqApiKey() const { return settings_.groqApiKey; }
     void setGroqApiKey(QString v);
@@ -65,6 +79,9 @@ signals:
     void sidebarModeChanged();
     void rightSidebarVisibleChanged();
     void settingsChanged();
+    /// Fired when a tab's split layout changes (split added/removed/flipped).
+    /// QML's Terminal/SplitContainer listen and rebuild their pane subtree.
+    void tabSplitChanged(const QString& tabId);
 
 private:
     void persistSession();

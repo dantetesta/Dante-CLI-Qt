@@ -19,6 +19,8 @@ void SnippetsModel::hydrate() {
         s.name = o.value("name").toString();
         s.command = o.value("command").toString();
         s.emoji = o.value("emoji").toString();
+        const auto tags = o.value("tags").toArray();
+        for (const auto& t : tags) s.tags.append(t.toString());
         items_.append(s);
     }
     endResetModel();
@@ -49,6 +51,49 @@ void SnippetsModel::add(const QString& name, const QString& command, const QStri
     items_.append(s); endInsertRows(); persist();
 }
 
+void SnippetsModel::addFull(const QVariantMap& props) {
+    beginInsertRows({}, items_.size(), items_.size());
+    Snippet s;
+    s.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    s.name = props.value("name").toString();
+    s.command = props.value("command").toString();
+    s.emoji = props.value("emoji").toString();
+    for (const auto& t : props.value("tags").toStringList()) s.tags.append(t);
+    items_.append(s);
+    endInsertRows();
+    persist();
+}
+
+void SnippetsModel::update(const QString& id, const QVariantMap& props) {
+    for (int i = 0; i < items_.size(); ++i) {
+        if (items_[i].id != id) continue;
+        auto& s = items_[i];
+        if (props.contains("name"))    s.name = props.value("name").toString();
+        if (props.contains("command")) s.command = props.value("command").toString();
+        if (props.contains("emoji"))   s.emoji = props.value("emoji").toString();
+        if (props.contains("tags")) {
+            s.tags.clear();
+            for (const auto& t : props.value("tags").toStringList()) s.tags.append(t);
+        }
+        const auto idx = index(i);
+        emit dataChanged(idx, idx);
+        persist();
+        return;
+    }
+}
+
+QVariantMap SnippetsModel::get(const QString& id) const {
+    for (const auto& s : items_) {
+        if (s.id != id) continue;
+        return QVariantMap{
+            {"id", s.id}, {"name", s.name}, {"command", s.command},
+            {"emoji", s.emoji},
+            {"tags", QVariant::fromValue(QStringList(s.tags))},
+        };
+    }
+    return {};
+}
+
 void SnippetsModel::remove(const QString& id) {
     for (int i = 0; i < items_.size(); ++i)
         if (items_[i].id == id) {
@@ -65,9 +110,12 @@ QString SnippetsModel::commandOf(const QString& id) const {
 void SnippetsModel::persist() {
     QJsonArray arr;
     for (const auto& s : items_) {
+        QJsonArray tags;
+        for (const auto& t : s.tags) tags.append(t);
         arr.append(QJsonObject{
             {"id", s.id}, {"name", s.name},
             {"command", s.command}, {"emoji", s.emoji},
+            {"tags", tags},
         });
     }
     store_->scheduleWrite(QJsonDocument(arr));

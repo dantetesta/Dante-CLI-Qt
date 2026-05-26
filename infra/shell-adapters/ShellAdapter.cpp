@@ -1,23 +1,43 @@
 #include "ShellAdapter.h"
+#include "terminal/IPtyAdapter.h"
+
+#if defined(Q_OS_WIN)
+  #include "ConPtyAdapter.h"
+#else
+  #include "UnixPtyAdapter.h"
+#endif
+
 #include <QDebug>
 #include <QStandardPaths>
 #include <QFileInfo>
 
 namespace dante::infra {
 
-ShellAdapter::ShellAdapter(QObject* parent)
-    : QObject(parent)
-{
-    proc_.setProcessChannelMode(QProcess::MergedChannels);
-    connect(&proc_, &QProcess::readyReadStandardOutput, this, [this]() {
-        const QByteArray data = proc_.readAllStandardOutput();
-        emit outputReceived(QString::fromUtf8(data));
-    });
-    connect(&proc_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this](int code, QProcess::ExitStatus) { emit processExited(code); });
+namespace {
+
+std::unique_ptr<dante::terminal::IPtyAdapter> makePlatformPty(QObject* owner) {
+#if defined(Q_OS_WIN)
+    return std::unique_ptr<dante::terminal::IPtyAdapter>(new ConPtyAdapter(owner));
+#else
+    return std::unique_ptr<dante::terminal::IPtyAdapter>(new UnixPtyAdapter(owner));
+#endif
 }
 
-ShellAdapter::~ShellAdapter() { kill(); }
+} // namespace
+
+ShellAdapter::ShellAdapter(QObject* parent)
+    : QObject(parent)
+    , pty_(makePlatformPty(this))
+{
+    connect(pty_.get(), &dante::terminal::IPtyAdapter::outputReceived,
+            this, &ShellAdapter::outputReceived);
+    connect(pty_.get(), &dante::terminal::IPtyAdapter::processExited,
+            this, &ShellAdapter::processExited);
+}
+
+ShellAdapter::~ShellAdapter() {
+    if (pty_) pty_->kill();
+}
 
 QString ShellAdapter::sanitize(QString s) const {
     s.remove(QChar(0));     // strip NUL bytes
@@ -48,47 +68,31 @@ bool ShellAdapter::start(const QString& shell, const QString& cwd, int cols, int
     const QString resolved = resolveShell(shell);
     const QString workdir  = sanitize(cwd);
 
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    env.insert("TERM", "xterm-256color");
-    env.insert("COLORTERM", "truecolor");
-    env.insert("DANTE_CLI", "1");
-    if (!env.contains("LANG")) env.insert("LANG", "en_US.UTF-8");
-    proc_.setProcessEnvironment(env);
-    if (!workdir.isEmpty() && QFileInfo::exists(workdir)) {
-        proc_.setWorkingDirectory(workdir);
-    }
-
-    QStringList args;
-#if !defined(Q_OS_WIN)
-    args << "-l";   // login shell
-#endif
-    proc_.start(resolved, args);
-    if (!proc_.waitForStarted(3000)) {
-        error_ = QStringLiteral("waitForStarted timeout: %1").arg(proc_.errorString());
+    if (!pty_) {
+        error_ = QStringLiteral("ShellAdapter: pty backend not constructed");
         return false;
     }
+    const bool ok = pty_->start(resolved, workdir, cols_, rows_);
+    if (!ok) {
+        error_ = pty_->errorString();
+        return false;
+    }
+    error_.clear();
     return true;
 }
 
 void ShellAdapter::resize(int cols, int rows) {
     cols_ = qMax(1, cols);
     rows_ = qMax(1, rows);
-    // QProcess has no resize; needs real PTY adapter. No-op for MVP.
+    if (pty_) pty_->resize(cols_, rows_);
 }
 
 void ShellAdapter::write(const QByteArray& bytes) {
-    if (proc_.state() != QProcess::Running) return;
-    proc_.write(bytes);
+    if (pty_) pty_->write(bytes);
 }
 
 void ShellAdapter::kill() {
-    if (proc_.state() == QProcess::Running) {
-        proc_.terminate();
-        if (!proc_.waitForFinished(1500)) {
-            proc_.kill();
-            proc_.waitForFinished(500);
-        }
-    }
+    if (pty_) pty_->kill();
 }
 
 } // namespace dante::infra

@@ -1,6 +1,7 @@
 // Favorites list-model — persisted to favorites.json.
 #pragma once
 #include <QAbstractListModel>
+#include <QVariantMap>
 #include "domain/Models.h"
 #include "persistence/JsonStore.h"
 #include <memory>
@@ -19,6 +20,9 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     Q_INVOKABLE void add(const QString& name, const QString& path, const QString& emoji);
+    Q_INVOKABLE void addFull(const QVariantMap& props);
+    Q_INVOKABLE void update(const QString& id, const QVariantMap& props);
+    Q_INVOKABLE QVariantMap get(const QString& id) const;
     Q_INVOKABLE void remove(const QString& id);
     Q_INVOKABLE QString pathOf(const QString& id) const;
 

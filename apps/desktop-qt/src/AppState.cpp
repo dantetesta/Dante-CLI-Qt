@@ -15,6 +15,8 @@ namespace {
             {"emoji", t.emoji}, {"pinned", t.pinned},
             {"kind", int(t.kind)}, {"cwd", t.cwd},
             {"sessionId", t.sessionId},
+            {"splitMode", t.splitMode},
+            {"secondSessionId", t.secondSessionId},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -27,6 +29,8 @@ namespace {
         t.kind = TabKind(o.value("kind").toInt(int(TabKind::Terminal)));
         t.cwd = o.value("cwd").toString();
         t.sessionId = o.value("sessionId").toString();
+        t.splitMode = o.value("splitMode").toString();
+        t.secondSessionId = o.value("secondSessionId").toString();
         return t;
     }
 }
@@ -162,6 +166,82 @@ void AppState::setGroqApiKey(QString v)     { settings_.groqApiKey = std::move(v
 void AppState::setTerminalScheme(QString v) { settings_.terminalScheme = std::move(v); emit settingsChanged(); persistSettings(); }
 void AppState::setFontName(QString v)       { settings_.fontName = std::move(v);       emit settingsChanged(); persistSettings(); }
 void AppState::setFontSize(int v)           { settings_.fontSize = v;                  emit settingsChanged(); persistSettings(); }
+
+/* ─── Split panes ─────────────────────────────────────────────────────────── */
+
+namespace {
+    int indexOfTab(const QVector<Tab>& tabs, const QString& id) {
+        for (int i = 0; i < tabs.size(); ++i) if (tabs[i].id == id) return i;
+        return -1;
+    }
+}
+
+QString AppState::tabSplitMode(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].splitMode;
+}
+
+QString AppState::tabPrimarySessionId(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].sessionId;
+}
+
+QString AppState::tabSecondSessionId(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].secondSessionId;
+}
+
+void AppState::splitActive(const QString& direction) {
+    const int i = indexOfTab(tabs_, activeTabId_);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+
+    if (direction.isEmpty()) {
+        // Collapse: keep "a", drop "b". Caller (QML) is expected to have
+        // already killed the b-session's PTY via `terminal.kill(id)`.
+        if (t.splitMode.isEmpty()) return;
+        t.splitMode.clear();
+        t.secondSessionId.clear();
+        emit tabSplitChanged(t.id);
+        persistSession();
+        return;
+    }
+    if (direction != "vertical" && direction != "horizontal") return;
+
+    // UUID-stable: ":b" suffix means the same secondary session survives
+    // toggles between vertical/horizontal split without respawning.
+    if (t.secondSessionId.isEmpty()) {
+        t.secondSessionId = t.sessionId.isEmpty()
+            ? newId() + ":b"
+            : t.sessionId + ":b";
+    }
+    t.splitMode = direction;
+    emit tabSplitChanged(t.id);
+    persistSession();
+}
+
+void AppState::closeActivePane(const QString& side) {
+    const int i = indexOfTab(tabs_, activeTabId_);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+    if (t.splitMode.isEmpty()) return;
+
+    if (side == "b") {
+        // Drop the right/bottom pane. PTY kill happens on QML side.
+        t.splitMode.clear();
+        t.secondSessionId.clear();
+    } else if (side == "a") {
+        // Promote b to a: the QML side kills the *old* a-session, then
+        // re-keys what was b onto the primary slot.
+        t.sessionId = t.secondSessionId;
+        t.splitMode.clear();
+        t.secondSessionId.clear();
+    } else {
+        return;
+    }
+    emit tabSplitChanged(t.id);
+    persistSession();
+}
 
 void AppState::persistSession() {
     QJsonArray arr;

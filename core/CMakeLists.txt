@@ -8,6 +8,15 @@ add_library(dante-core STATIC
     terminal/TerminalSession.h
     terminal/TerminalRegistry.cpp
     terminal/TerminalRegistry.h
+    terminal/IPtyAdapter.h
+    terminal/VTParser.cpp
+    terminal/VTParser.h
+    terminal/TerminalBuffer.cpp
+    terminal/TerminalBuffer.h
+    themes/TerminalScheme.cpp
+    themes/TerminalScheme.h
+    themes/ThemeRegistry.cpp
+    themes/ThemeRegistry.h
     ai/GroqClient.cpp
     ai/GroqClient.h
     domain/Models.h
@@ -20,7 +29,7 @@ add_library(dante-core STATIC
 target_include_directories(dante-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(dante-core PUBLIC
-    Qt6::Core Qt6::Network Qt6::Sql Qt6::Concurrent
+    Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql Qt6::Concurrent
 )
 
 set_target_properties(dante-core PROPERTIES
