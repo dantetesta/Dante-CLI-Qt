@@ -25,10 +25,12 @@
 #include "themes/ThemeRegistry.h"
 
 #include <QApplication>
+#include <QMessageBox>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QWindow>
 #include <qqml.h>
@@ -37,7 +39,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.11");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.13");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -133,6 +135,19 @@ int main(int argc, char* argv[]) {
     engine.loadFromModule("dante.ui", "Main");
     if (engine.rootObjects().isEmpty()) {
         qCritical() << "Failed to load Main.qml";
+        // Pre-alpha.13 a missing Qt plugin would crash *here* with no UI
+        // feedback (just exit -1) — the user reports it as "não abriu". A
+        // QMessageBox surfaces *something* before we bail, plus a hint where
+        // to find the structured log so we can debug remotely.
+        const QString logDir =
+            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/logs";
+        QMessageBox::critical(
+            nullptr,
+            "Dante CLI",
+            "Falha ao carregar a interface (Main.qml).\n\n"
+            "Geralmente isso significa que algum plugin do Qt está faltando "
+            "(qwindows.dll em platforms/, Qt6Multimedia.dll, etc.).\n\n"
+            "Veja o log em:\n" + logDir);
         return -1;
     }
 

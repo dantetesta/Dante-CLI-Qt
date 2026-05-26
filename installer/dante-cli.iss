@@ -59,4 +59,31 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+; Install the Visual C++ Redistributable (silent). Required for Qt 6 +
+; MSVC builds — without it the app crashes immediately on launch with no
+; error dialog on machines that don't already have it.
+Filename: "{app}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; \
+    StatusMsg: "Instalando Visual C++ Redistributable…"; \
+    Check: NeedsVCRedist; \
+    Flags: waituntilterminated
+
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function NeedsVCRedist: Boolean;
+var
+  Installed: Cardinal;
+begin
+  // VS 2015–2022 share the same runtime — the registry key is at
+  //   HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64\Installed
+  // == 1 when the redist is present.
+  Result := True;
+  if RegQueryDWordValue(
+       HKEY_LOCAL_MACHINE,
+       'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64',
+       'Installed',
+       Installed) then
+  begin
+    if Installed = 1 then Result := False;
+  end;
+end;

@@ -53,6 +53,17 @@ jobs:
         shell: cmd
         run: cmake --build build --parallel
 
+      - name: Re-run windeployqt (belt-and-suspenders)
+        shell: cmd
+        # Even though CMake POST_BUILD already invokes windeployqt, we run it
+        # again here with explicit --dir so platforms/, imageformats/, styles/,
+        # and the MSVC runtime files all land NEXT TO the .exe (some Qt
+        # versions resolve --dir from CWD when called via Ninja).
+        run: |
+          for /f "delims=" %%F in ('dir /s /b build\Dante CLI.exe') do set EXEDIR=%%~dpF
+          echo Deploying into "%EXEDIR%"
+          windeployqt --dir "%EXEDIR%" --release --compiler-runtime --qmldir ui\qml "%EXEDIR%Dante CLI.exe"
+
       - name: Collect deploy folder
         shell: pwsh
         run: |
@@ -61,8 +72,39 @@ jobs:
           $deploy = Join-Path $env:GITHUB_WORKSPACE 'deploy'
           New-Item -ItemType Directory -Force -Path $deploy | Out-Null
           Copy-Item "$($exe.DirectoryName)\*" $deploy -Recurse -Force
-          Write-Host "Deploy contents:"
+
+          # Sanity check — the app silently crashes on launch if any of these
+          # are missing. Fail the build loudly instead of shipping a broken
+          # installer (the v0.7.0-alpha.12 release had this exact bug).
+          $must = @(
+            'Dante CLI.exe',
+            'platforms\qwindows.dll',
+            'Qt6Core.dll',
+            'Qt6Gui.dll',
+            'Qt6Quick.dll'
+          )
+          foreach ($f in $must) {
+            $p = Join-Path $deploy $f
+            if (-not (Test-Path $p)) { throw "Missing in deploy: $f" }
+          }
+          # Try to grab the MSVC redistributable that windeployqt's
+          # --compiler-runtime should have left behind so Inno can install
+          # it for users on machines without VC++ 2019/2022 runtimes.
+          $vcr = Get-ChildItem -Path "$deploy" -Recurse -Filter "vc_redist*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $vcr) {
+            $vcrPath = Join-Path $deploy 'vc_redist.x64.exe'
+            Invoke-WebRequest -UseBasicParsing `
+              -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' `
+              -OutFile $vcrPath
+            Write-Host "Downloaded vc_redist.x64.exe from MS"
+          } else {
+            Write-Host "windeployqt provided $($vcr.Name)"
+          }
+
+          Write-Host "Deploy contents (top level):"
           Get-ChildItem $deploy | Format-Table Name, Length
+          Write-Host "Deploy contents (platforms/):"
+          Get-ChildItem (Join-Path $deploy 'platforms') | Format-Table Name, Length
 
       - name: Install Inno Setup
         shell: pwsh

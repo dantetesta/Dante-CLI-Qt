@@ -102,13 +102,20 @@ set_target_properties(dante-cli PROPERTIES
     OUTPUT_NAME "Dante CLI"
 )
 
-# Windows: copy required Qt DLLs next to the .exe so the build folder is
-# ready to ship. Production installer (Inno Setup) bundles the same set.
+# Windows: copy Qt DLLs + plugins (platforms/, imageformats/, styles/) +
+# the MSVC redistributable next to the .exe so the build folder is
+# self-contained. The `--dir` flag is critical — without it windeployqt
+# writes platforms/ relative to CWD (build/), not the .exe's directory
+# (build/apps/desktop-qt/), and the installer ends up missing qwindows.dll
+# which crashes the app on launch with no error dialog.
 if(WIN32)
     add_custom_command(TARGET dante-cli POST_BUILD
         COMMAND Qt6::windeployqt
+            --dir "$<TARGET_FILE_DIR:dante-cli>"
             --qmldir "${CMAKE_SOURCE_DIR}/ui/qml"
+            --release
+            --compiler-runtime
             "$<TARGET_FILE:dante-cli>"
-        COMMENT "Running windeployqt"
+        COMMENT "Running windeployqt with --dir + --compiler-runtime"
     )
 endif()
