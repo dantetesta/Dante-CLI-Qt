@@ -36,7 +36,7 @@ Rectangle {
             delegate: TabChip {
                 tabId:    model.tabId
                 title:    model.title
-                color:    model.color
+                tint:     model.color
                 emoji:    model.emoji
                 pinned:   model.pinned
                 isActive: model.active
