@@ -54,7 +54,7 @@ Rectangle {
             text: chip.title
             color: Theme.fg
             font.family: Theme.fontSans
-            font.pixelSize: 12.5
+            font.pixelSize: 13
             font.weight: chip.isActive ? Font.Bold : Font.Normal
             elide: Text.ElideMiddle
             width: Math.min(implicitWidth, 150)

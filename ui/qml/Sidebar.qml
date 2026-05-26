@@ -48,7 +48,7 @@ Rectangle {
                     spacing: 0
                     Layout.fillWidth: true
                     Text { text: "Dante CLI"; color: Theme.fgStrong; font.family: Theme.fontSans; font.pixelSize: 14; font.weight: Font.DemiBold }
-                    Text { text: "Terminal premium"; color: Theme.fgFaint; font.family: Theme.fontSans; font.pixelSize: 10.5 }
+                    Text { text: "Terminal premium"; color: Theme.fgFaint; font.family: Theme.fontSans; font.pixelSize: 11 }
                 }
             }
         }
@@ -115,7 +115,7 @@ Rectangle {
                 placeholderText: "Buscar… (⌘L)"
                 color: Theme.fg
                 font.family: Theme.fontSans
-                font.pixelSize: 12.5
+                font.pixelSize: 13
                 background: null
                 onTextChanged: appState.filter = text
             }
@@ -145,7 +145,7 @@ Rectangle {
                         ColumnLayout {
                             spacing: 2; Layout.fillWidth: true
                             Text { text: model.name; color: Theme.fg; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
-                            Text { text: model.path; color: Theme.fgFaint; font.pixelSize: 10.5; font.family: Theme.fontMono; elide: Text.ElideMiddle }
+                            Text { text: model.path; color: Theme.fgFaint; font.pixelSize: 11; font.family: Theme.fontMono; elide: Text.ElideMiddle }
                         }
                     }
                     MouseArea {
@@ -179,7 +179,7 @@ Rectangle {
                         ColumnLayout {
                             spacing: 2; Layout.fillWidth: true
                             Text { text: model.name; color: Theme.fg; font.pixelSize: 13; elide: Text.ElideRight }
-                            Text { text: model.command; color: Theme.fgFaint; font.pixelSize: 10.5; font.family: Theme.fontMono; elide: Text.ElideRight }
+                            Text { text: model.command; color: Theme.fgFaint; font.pixelSize: 11; font.family: Theme.fontMono; elide: Text.ElideRight }
                         }
                     }
                     MouseArea {
@@ -210,7 +210,7 @@ Rectangle {
                         ColumnLayout {
                             spacing: 2; Layout.fillWidth: true
                             Text { text: model.name; color: Theme.fg; font.pixelSize: 13 }
-                            Text { text: model.fieldCount + " campos"; color: Theme.fgFaint; font.pixelSize: 10.5 }
+                            Text { text: model.fieldCount + " campos"; color: Theme.fgFaint; font.pixelSize: 11 }
                         }
                     }
                     MouseArea {

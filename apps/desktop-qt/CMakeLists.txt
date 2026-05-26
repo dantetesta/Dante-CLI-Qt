@@ -16,9 +16,19 @@ qt_add_executable(dante-cli WIN32
     src/TerminalBridge.h
 )
 
-# QML files — kept under ui/qml so they round-trip through the resource system.
-# Theme.qml is a singleton (pragma Singleton); mark it as such so qmldir is
-# generated correctly and `Theme.foo` works from peer QML files.
+# QML files live outside the target's source dir (../../ui/qml/). Without an
+# explicit QT_RESOURCE_ALIAS each file's resource path inherits the physical
+# location ("ui/qml/Main.qml"), which makes loadFromModule("dante.ui","Main")
+# fail at runtime. Aliasing each file to its bare name puts it under the
+# module URI as expected.
+foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme)
+    set_source_files_properties(
+        ../../ui/qml/${qml_file}.qml
+        PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
+    )
+endforeach()
+
+# Theme.qml is a singleton (pragma Singleton).
 set_source_files_properties(../../ui/qml/Theme.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
