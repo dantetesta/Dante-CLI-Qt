@@ -10,6 +10,11 @@ namespace dante {
 namespace {
     QString newId() { return QUuid::createUuid().toString(QUuid::WithoutBraces); }
 
+    int indexOfTab(const QVector<Tab>& tabs, const QString& id) {
+        for (int i = 0; i < tabs.size(); ++i) if (tabs[i].id == id) return i;
+        return -1;
+    }
+
     QJsonObject spansToJson(const QVariantMap& m) {
         QJsonObject o;
         for (auto it = m.constBegin(); it != m.constEnd(); ++it) {
@@ -149,6 +154,9 @@ void AppState::closeTab(const QString& id) {
         if (tabs_[i].id == id) { idx = i; break; }
     }
     if (idx < 0) return;
+    // SPEC-120 / 091 — pinned tabs are immune to closeTab. The user has to
+    // explicitly unpin from the right-click menu (mirrors Swift behaviour).
+    if (tabs_[idx].pinned) return;
     tabs_.removeAt(idx);
     if (tabs_.isEmpty()) {
         // Emergency new tab.
@@ -166,6 +174,80 @@ void AppState::closeTab(const QString& id) {
 }
 
 void AppState::selectTab(const QString& id) { setActiveTabId(id); }
+
+/* ─── SPEC-120 — tab-chip mutations ─────────────────────────────────────── */
+
+void AppState::setTabTitle(const QString& tabId, const QString& title) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    const QString clean = title.trimmed().isEmpty() ? QStringLiteral("Terminal")
+                                                    : title.trimmed();
+    if (tabs_[i].title == clean) return;
+    tabs_[i].title = clean;
+    emit tabsChanged();
+    persistSession();
+}
+
+void AppState::setTabColor(const QString& tabId, const QString& colorHex) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    if (tabs_[i].color == colorHex) return;
+    tabs_[i].color = colorHex;
+    emit tabsChanged();
+    persistSession();
+}
+
+void AppState::setTabEmoji(const QString& tabId, const QString& emoji) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    if (tabs_[i].emoji == emoji) return;
+    tabs_[i].emoji = emoji;
+    emit tabsChanged();
+    persistSession();
+}
+
+void AppState::setTabScheme(const QString& tabId, const QString& schemeId) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    if (tabs_[i].customScheme == schemeId) return;
+    tabs_[i].customScheme = schemeId;
+    emit tabsChanged();
+    persistSession();
+}
+
+void AppState::setTabPinned(const QString& tabId, bool pinned) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    if (tabs_[i].pinned == pinned) return;
+    tabs_[i].pinned = pinned;
+    emit tabsChanged();
+    persistSession();
+}
+
+bool AppState::isTabPinned(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i >= 0 ? tabs_[i].pinned : false;
+}
+
+QString AppState::duplicateTab(const QString& tabId) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return {};
+    Tab t = tabs_[i];          // copy metadata
+    t.id = newId();            // fresh ids — no shared PTY
+    t.sessionId = newId();
+    t.secondSessionId.clear();
+    t.splitMode.clear();
+    t.gridCols = 0;
+    t.gridRows = 0;
+    t.gridSpans.clear();
+    t.pinned = false;          // duplicates start unpinned by convention
+    tabs_.append(t);
+    activeTabId_ = t.id;
+    emit tabsChanged();
+    emit activeTabIdChanged();
+    persistSession();
+    return t.id;
+}
 
 void AppState::setActiveTabId(QString v) {
     if (activeTabId_ == v) return;
@@ -214,13 +296,6 @@ void AppState::setAppearanceMode(int v)     { settings_.appearance = AppearanceM
 void AppState::setAutoCheckUpdates(bool v)  { settings_.autoCheckUpdates = v;          emit settingsChanged(); persistSettings(); }
 
 /* ─── Split panes ─────────────────────────────────────────────────────────── */
-
-namespace {
-    int indexOfTab(const QVector<Tab>& tabs, const QString& id) {
-        for (int i = 0; i < tabs.size(); ++i) if (tabs[i].id == id) return i;
-        return -1;
-    }
-}
 
 QString AppState::tabSplitMode(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);

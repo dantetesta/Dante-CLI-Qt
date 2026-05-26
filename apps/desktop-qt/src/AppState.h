@@ -42,6 +42,19 @@ public:
     Q_INVOKABLE void closeTab(const QString& id);
     Q_INVOKABLE void selectTab(const QString& id);
 
+    /* ─── Tab-chip mutations (SPEC-120) ─── */
+    /// Rename. Empty title falls back to "Terminal" to avoid invisible chips.
+    Q_INVOKABLE void setTabTitle(const QString& tabId, const QString& title);
+    Q_INVOKABLE void setTabColor(const QString& tabId, const QString& colorHex);
+    Q_INVOKABLE void setTabEmoji(const QString& tabId, const QString& emoji);
+    /// Per-tab scheme override (id from ThemeRegistry; empty == inherit settings).
+    Q_INVOKABLE void setTabScheme(const QString& tabId, const QString& schemeId);
+    /// Pinned tabs are skipped by closeTab() (matches Swift sibling).
+    Q_INVOKABLE void setTabPinned(const QString& tabId, bool pinned);
+    Q_INVOKABLE bool isTabPinned(const QString& tabId) const;
+    /// Clone all visible metadata except sessionId (new shell session).
+    Q_INVOKABLE QString duplicateTab(const QString& tabId);
+
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".
     Q_INVOKABLE QString tabSplitMode(const QString& tabId) const;
