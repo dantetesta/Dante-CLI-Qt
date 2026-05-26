@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QDesktopServices>
+#include <QDir>
 #include <QFile>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
