@@ -342,10 +342,11 @@ Item {
     // ───── Local sub-components ─────
 
     component IconButton: Rectangle {
+        // `enabled` re-uses the base Item.enabled (declaring it as a custom
+        // property would shadow the base and trip qmllint warnings).
         property string text: ""
         property string tooltip: ""
         property bool   highlighted: false
-        property bool   enabled: true
         signal clicked()
 
         implicitWidth: 28

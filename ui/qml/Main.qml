@@ -176,9 +176,10 @@ ApplicationWindow {
         }
     }
 
-    // Global ⌘T / Ctrl+T → new tab.
-    Shortcut { sequence: StandardKey.AddTab;   onActivated: appState.addTab("Terminal") }
-    Shortcut { sequence: StandardKey.Close;    onActivated: appState.closeTab(appState.activeTabId) }
+    // Global ⌘T / Ctrl+T → new tab. `sequences` (plural) binds all of
+    // QKeySequence::AddTab's platform mappings, not just the primary.
+    Shortcut { sequences: [StandardKey.AddTab]; onActivated: appState.addTab("Terminal") }
+    Shortcut { sequences: [StandardKey.Close];  onActivated: appState.closeTab(appState.activeTabId) }
     Shortcut { sequence: "Ctrl+Shift+]";       onActivated: term.cycleTab(1) }
     Shortcut { sequence: "Ctrl+Shift+[";       onActivated: term.cycleTab(-1) }
     // Toggle AI overlay with Ctrl+Shift+A (matches Swift sibling vibe).

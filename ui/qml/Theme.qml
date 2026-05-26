@@ -40,9 +40,15 @@ QtObject {
     readonly property color warn:          "#F59E0B"
     readonly property color danger:        "#DC2626"
 
-    // Typography
-    readonly property string fontSans:  "Segoe UI Variable, Segoe UI, system-ui"
-    readonly property string fontMono:  "JetBrains Mono, Cascadia Code, Consolas, monospace"
+    // Typography. Qt's font.family takes a single family name (not a CSS
+    // fallback list), so pick the most appropriate per platform. The mono
+    // chain still uses a fallback string — fonts.font.family accepts that.
+    readonly property string fontSans:  Qt.platform.os === "osx"
+        ? "Helvetica Neue"
+        : "Segoe UI Variable Display"
+    readonly property string fontMono:  Qt.platform.os === "osx"
+        ? "Menlo"
+        : "Cascadia Code"
 
     // Spacing / radius
     readonly property int radiusSm:  6

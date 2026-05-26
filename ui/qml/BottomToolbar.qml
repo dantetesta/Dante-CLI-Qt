@@ -102,10 +102,11 @@ Rectangle {
     // Small clickable row used in the Layout popup. Disabled rows mute
     // their text color and ignore clicks (same convention as a native menu).
     component LayoutMenuItem: Rectangle {
+        // `enabled` here re-uses the base Item.enabled — declaring a custom
+        // property would shadow the base and trip qmllint.
         id: lmi
         property string text: ""
         property string shortcutHint: ""
-        property bool   enabled: true
         signal triggered()
 
         implicitWidth:  220
