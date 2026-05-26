@@ -4,6 +4,7 @@
 import QtQuick 6.5
 import QtQuick.Window 6.5
 import QtQuick.Controls 6.5
+import QtQuick.Dialogs   // SPEC-021 — Cmd+O picks a file to open in editor
 import QtQuick.Layouts 6.5
 import "."
 
@@ -183,6 +184,20 @@ ApplicationWindow {
         id: aboutView
     }
 
+    // ───── SPEC-021 — Open file dialog (Ctrl+O) ─────
+    FileDialog {
+        id: openFileDlg
+        title: qsTr("Abrir arquivo")
+        nameFilters: [
+            qsTr("Texto e código (*.md *.txt *.json *.js *.ts *.py *.rs *.go *.sh *.zsh *.bash *.yaml *.yml *.toml *.html *.css *.cpp *.c *.h *.qml *.swift)"),
+            qsTr("Todos (*)")
+        ]
+        onAccepted: {
+            const local = openFileDlg.selectedFile.toString().replace(/^file:\/\//, "")
+            appState.openFileInEditor(local)
+        }
+    }
+
     // ───── Focus mode "Sair" pill — SPEC-142 ─────
     Rectangle {
         id: focusPill
@@ -284,6 +299,18 @@ ApplicationWindow {
     Shortcut {
         sequences: ["F2"]
         onActivated: aboutView.opened ? aboutView.close() : aboutView.open()
+    }
+    // SPEC-021 — Cmd+O open file in editor, Cmd+S save active editor.
+    Shortcut {
+        sequences: [StandardKey.Open]
+        onActivated: openFileDlg.open()
+    }
+    Shortcut {
+        sequences: [StandardKey.Save]
+        onActivated: {
+            if (appState.tabKind(appState.activeTabId) === 1)
+                appState.saveEditor(appState.activeTabId)
+        }
     }
 
     // ─── SPEC-090 batch (closes 091..098) ───

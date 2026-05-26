@@ -55,6 +55,12 @@ struct Tab {
     int         gridCols{0};      // 0 = no grid workspace; fall back to splitMode
     int         gridRows{0};
     QVariantMap gridSpans;
+
+    // SPEC-021 — Editor tab content. Only meaningful when kind == Editor.
+    QString editorPath;       // absolute path on disk (empty for unsaved scratch)
+    QString editorContent;    // current buffer (may be ahead of disk if dirty)
+    QString editorLanguage;   // detected/forced language id ("md","json","py",…)
+    bool    editorDirty{false};
 };
 
 // -----------------------------------------------------------------------------

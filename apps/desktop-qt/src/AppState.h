@@ -56,6 +56,23 @@ public:
     /// Clone all visible metadata except sessionId (new shell session).
     Q_INVOKABLE QString duplicateTab(const QString& tabId);
 
+    /* ─── SPEC-021 — Editor tab kind ─── */
+    /// Create (or focus, if already open) an editor tab for `path`. Returns
+    /// the tab id. Reads the file synchronously up to ~5 MB; bigger files
+    /// surface an error via toast (TODO) and a tab is not created.
+    Q_INVOKABLE QString openFileInEditor(const QString& path);
+    /// Persist the editor buffer to disk. Clears the dirty flag on success.
+    /// Emits operationFailed-style log lines on IO error (TODO toast).
+    Q_INVOKABLE bool saveEditor(const QString& tabId);
+    /// Update the in-memory buffer (called from EditorView on every key).
+    Q_INVOKABLE void setEditorContent(const QString& tabId, const QString& content);
+    /// Read-only getters (QML uses them through bindings keyed on `_bump`).
+    Q_INVOKABLE QString editorPath(const QString& tabId) const;
+    Q_INVOKABLE QString editorContent(const QString& tabId) const;
+    Q_INVOKABLE QString editorLanguage(const QString& tabId) const;
+    Q_INVOKABLE bool    editorDirty(const QString& tabId) const;
+    Q_INVOKABLE int     tabKind(const QString& tabId) const; // 0=Terminal, 1=Editor, …
+
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".
     Q_INVOKABLE QString tabSplitMode(const QString& tabId) const;

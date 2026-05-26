@@ -1,4 +1,6 @@
 #include "AppState.h"
+#include <QFile>
+#include <QFileInfo>
 #include <QUuid>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -49,6 +51,12 @@ namespace {
             {"gridCols", t.gridCols},
             {"gridRows", t.gridRows},
             {"gridSpans", spansToJson(t.gridSpans)},
+            {"editorPath", t.editorPath},
+            // editorContent is NOT persisted — too heavy for session.json on
+            // big files. We persist editorPath + editorDirty; on launch a
+            // dirty editor reloads from disk and shows a "modified" hint.
+            {"editorLanguage", t.editorLanguage},
+            {"editorDirty", t.editorDirty},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -67,6 +75,9 @@ namespace {
         t.gridCols = o.value("gridCols").toInt(0);
         t.gridRows = o.value("gridRows").toInt(0);
         t.gridSpans = spansFromJson(o.value("gridSpans").toObject());
+        t.editorPath = o.value("editorPath").toString();
+        t.editorLanguage = o.value("editorLanguage").toString();
+        t.editorDirty = o.value("editorDirty").toBool();
         return t;
     }
 }
@@ -233,6 +244,108 @@ bool AppState::isTabPinned(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);
     return i >= 0 ? tabs_[i].pinned : false;
 }
+
+/* ─── SPEC-021 — Editor tab kind ─────────────────────────────────────── */
+
+QString AppState::openFileInEditor(const QString& path) {
+    const QString abs = QFileInfo(path).absoluteFilePath();
+    // Re-use an existing editor tab pointing at the same path.
+    for (const auto& t : tabs_) {
+        if (t.kind == TabKind::Editor && t.editorPath == abs) {
+            activeTabId_ = t.id;
+            emit activeTabIdChanged();
+            return t.id;
+        }
+    }
+    QFile f(abs);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning().noquote() << "[editor] open failed:" << f.errorString();
+        return {};
+    }
+    // 5 MB ceiling — anything bigger we refuse rather than freeze the UI.
+    if (f.size() > 5 * 1024 * 1024) {
+        qWarning().noquote() << "[editor] file too large:" << f.size();
+        return {};
+    }
+    const QString content = QString::fromUtf8(f.readAll());
+    f.close();
+
+    Tab t;
+    t.id = newId();
+    t.kind = TabKind::Editor;
+    t.title = QFileInfo(abs).fileName();
+    t.emoji = QStringLiteral("📝");
+    t.color = QStringLiteral("#F59E0B");   // amber differentiates from terminal
+    t.editorPath = abs;
+    t.editorContent = content;
+    t.editorDirty = false;
+    // Language hint from extension. EditorView uses this to pick syntax rules
+    // (highlighter lands as a follow-up, but the field already persists).
+    t.editorLanguage = QFileInfo(abs).suffix().toLower();
+    tabs_.append(t);
+    activeTabId_ = t.id;
+    emit tabsChanged();
+    emit activeTabIdChanged();
+    persistSession();
+    return t.id;
+}
+
+bool AppState::saveEditor(const QString& tabId) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return false;
+    Tab& t = tabs_[i];
+    if (t.kind != TabKind::Editor || t.editorPath.isEmpty()) return false;
+
+    QFile f(t.editorPath);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        qWarning().noquote() << "[editor] save failed:" << f.errorString();
+        return false;
+    }
+    f.write(t.editorContent.toUtf8());
+    f.close();
+
+    t.editorDirty = false;
+    emit tabsChanged();
+    persistSession();
+    return true;
+}
+
+void AppState::setEditorContent(const QString& tabId, const QString& content) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+    if (t.kind != TabKind::Editor) return;
+    if (t.editorContent == content) return;
+    t.editorContent = content;
+    if (!t.editorDirty) {
+        t.editorDirty = true;
+        emit tabsChanged();   // refresh chip "● modified" indicator
+    }
+    // Don't persist on every keystroke — only on save/saveOnClose.
+}
+
+QString AppState::editorPath(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].editorPath;
+}
+QString AppState::editorContent(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].editorContent;
+}
+QString AppState::editorLanguage(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].editorLanguage;
+}
+bool AppState::editorDirty(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i >= 0 && tabs_[i].editorDirty;
+}
+int AppState::tabKind(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? 0 : int(tabs_[i].kind);
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
 
 QString AppState::duplicateTab(const QString& tabId) {
     const int i = indexOfTab(tabs_, tabId);
