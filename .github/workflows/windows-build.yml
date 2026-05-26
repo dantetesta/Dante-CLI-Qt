@@ -8,6 +8,10 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+# Needed so GITHUB_TOKEN can create/attach to releases (default token is RO).
+permissions:
+  contents: write
+
 env:
   QT_VERSION: 6.7.2
   BUILD_TYPE: Release
