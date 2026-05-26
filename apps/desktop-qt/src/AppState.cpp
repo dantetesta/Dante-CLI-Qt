@@ -98,6 +98,11 @@ void AppState::hydrate() {
             settings_.voiceAutoSubmit    = o.value("voiceAutoSubmit").toBool(false);
             settings_.appearance         = AppearanceMode(o.value("appearance").toInt(int(AppearanceMode::Dark)));
             settings_.autoCheckUpdates   = o.value("autoCheckUpdates").toBool(true);
+            const auto recents = o.value("recentEmojis").toArray();
+            if (!recents.isEmpty()) {
+                settings_.recentEmojis.clear();
+                for (const auto& v : recents) settings_.recentEmojis.append(v.toString());
+            }
         }
     }
     emit settingsChanged();
@@ -295,6 +300,17 @@ void AppState::setVoiceAutoSubmit(bool v)   { settings_.voiceAutoSubmit = v;    
 void AppState::setAppearanceMode(int v)     { settings_.appearance = AppearanceMode(qBound(0, v, 2)); emit settingsChanged(); persistSettings(); }
 void AppState::setAutoCheckUpdates(bool v)  { settings_.autoCheckUpdates = v;          emit settingsChanged(); persistSettings(); }
 
+void AppState::pushRecentEmoji(const QString& emoji) {
+    const QString e = emoji.trimmed();
+    if (e.isEmpty()) return;
+    auto& list = settings_.recentEmojis;
+    list.removeAll(e);
+    list.prepend(e);
+    while (list.size() > 32) list.removeLast();
+    emit settingsChanged();
+    persistSettings();
+}
+
 /* ─── Split panes ─────────────────────────────────────────────────────────── */
 
 QString AppState::tabSplitMode(const QString& tabId) const {
@@ -443,6 +459,7 @@ void AppState::persistSettings() {
         {"voiceAutoSubmit",     settings_.voiceAutoSubmit},
         {"appearance",          int(settings_.appearance)},
         {"autoCheckUpdates",    settings_.autoCheckUpdates},
+        {"recentEmojis",        QJsonArray::fromStringList(settings_.recentEmojis)},
     }));
 }
 

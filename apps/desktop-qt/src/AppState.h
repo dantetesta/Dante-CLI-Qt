@@ -29,6 +29,7 @@ class AppState : public QObject {
     Q_PROPERTY(bool    voiceAutoSubmit     READ voiceAutoSubmit     WRITE setVoiceAutoSubmit     NOTIFY settingsChanged)
     Q_PROPERTY(int     appearanceMode      READ appearanceMode      WRITE setAppearanceMode      NOTIFY settingsChanged)
     Q_PROPERTY(bool    autoCheckUpdates    READ autoCheckUpdates    WRITE setAutoCheckUpdates    NOTIFY settingsChanged)
+    Q_PROPERTY(QStringList recentEmojis    READ recentEmojis        NOTIFY settingsChanged)
 public:
     explicit AppState(QObject* parent = nullptr);
 
@@ -86,6 +87,11 @@ public:
     Q_INVOKABLE void setTabGrid(const QString& tabId, int cols, int rows, const QVariantMap& spans);
 
     /* ─── Settings ─── */
+    QStringList recentEmojis() const { return settings_.recentEmojis; }
+    /// Move `emoji` to the head of the recents list. Dedups + caps to 32.
+    /// Empty strings are ignored. Persisted via settings.json.
+    Q_INVOKABLE void pushRecentEmoji(const QString& emoji);
+
     QString groqApiKey() const { return settings_.groqApiKey; }
     void setGroqApiKey(QString v);
     QString terminalScheme() const { return settings_.terminalScheme; }
