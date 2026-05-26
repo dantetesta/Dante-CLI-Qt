@@ -166,14 +166,15 @@ Catálogo Swift completo no audit. Status Qt:
 
 Foco em fechar P0 antes de tocar P1.
 
-### Fase A — "produto utilizável de verdade" (alpha.17 → alpha.23)
-1. SPEC-100 — adicionar 32 schemes (alpha.17)
-2. SPEC-140 — cheatsheet popup (alpha.18)
-3. SPEC-120 — TabChip polish (pin, inline edit, color picker) (alpha.19)
-4. SPEC-130 — EmojiPicker completo (alpha.20)
-5. SPEC-031 — mouse modes VT (alpha.21)
-6. SPEC-021 — Editor pane com syntax highlight (alpha.22)
-7. SPEC-110 — PaneNode recursivo (N panes) (alpha.23)
+### Fase A — "produto utilizável de verdade" (alpha.17 → alpha.25)
+1. ✅ SPEC-100 — 47 schemes (alpha.18, commit 9012844)
+2. ✅ SPEC-140 — cheatsheet popup (alpha.19, commit 73e375e)
+3. ✅ SPEC-120 + SPEC-091 — TabChip polish + pin guard (alpha.20, commit 1597e0e)
+4. ✅ SPEC-090 (091..098) + SPEC-141 + SPEC-142 — atalhos + About + Focus (alpha.21, commit 9423e30)
+5. ✅ SPEC-031 — mouse modes VT 1000/1002/1003/1006 (alpha.22, commit 339f67b)
+6. ✅ SPEC-130 — EmojiPicker completo (~700 emojis, 13 cats, recents) (alpha.23, commit cb57e45)
+7. ✅ SPEC-021 — Editor pane (sem syntax highlight ainda) (alpha.24, commit 6b2d9b6)
+8. ⏳ SPEC-110 — PaneNode recursivo (N panes) — em andamento
 
 ### Fase B — "paridade visível" (alpha.24 → alpha.32)
 8. SPEC-090 + 091–098 — todos os atalhos (alpha.24)
