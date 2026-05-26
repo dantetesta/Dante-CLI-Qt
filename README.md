@@ -11,9 +11,9 @@ layout designer multi-painel, 11 esquemas de cor, autoupdate. Escrito em
 
 ## Download
 
-**Release atual:** [`v0.7.0-alpha.15`](https://github.com/dantetesta/Dante-CLI-Qt/releases/latest) — 58 MB
+**Release atual:** [`v0.7.0-alpha.16`](https://github.com/dantetesta/Dante-CLI-Qt/releases/latest) — 58 MB
 
-[**▶ Baixar Dante-CLI-Setup-0.7.0-x64.exe (Windows 10/11)**](https://github.com/dantetesta/Dante-CLI-Qt/releases/download/v0.7.0-alpha.15/Dante-CLI-Setup-0.7.0-x64.exe)
+[**▶ Baixar Dante-CLI-Setup-0.7.0-x64.exe (Windows 10/11)**](https://github.com/dantetesta/Dante-CLI-Qt/releases/download/v0.7.0-alpha.16/Dante-CLI-Setup-0.7.0-x64.exe)
 
 > alpha.13/14 corrigem um bug crítico que tava deixando o app **não abrir**
 > em algumas máquinas Windows (plugin `platforms/qwindows.dll` não estava
