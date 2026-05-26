@@ -79,6 +79,9 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void hoverMoveEvent(QHoverEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
 
     // VTHandler implementation — these are hot, keep them inline-friendly.
@@ -101,6 +104,7 @@ protected:
     void setCursorVisible(bool v) override { buffer_.setCursorVisible(v); schedule(); }
     void setAltScreen(bool v) override { buffer_.setAltScreen(v); schedule(); }
     void setBracketedPaste(bool v) override { bracketedPaste_ = v; }
+    void setMouseTracking(int mode, bool on) override;
     void osc(int code, const QString& payload) override { emit oscEvent(code, payload); }
     void setScrollRegion(int t, int b) override { buffer_.setScrollRegion(t, b); }
     void insertLines(int n) override { buffer_.insertLines(n); schedule(); }
@@ -135,6 +139,16 @@ private:
     bool    bracketedPaste_{false};
     bool    repaintScheduled_{false};
     QTimer  repaintTimer_;
+
+    /// SPEC-031 — mouse tracking modes negotiated via DEC private modes.
+    /// `mouseEventMode_` ∈ {0, 1000, 1002, 1003}.
+    int     mouseEventMode_{0};
+    bool    mouseSGR_{false};       // DEC 1006 — use decimal SGR encoding
+
+    /// Encode + emit a mouse report. `qtButton` is QMouseEvent::button()
+    /// (or NoButton for motion-only); `kind` ∈ {press, release, move}.
+    void reportMouse(int qtButton, Qt::KeyboardModifiers mods,
+                     QPointF localPos, char kind /* 'p','r','m' */);
 };
 
 } // namespace dante

@@ -262,7 +262,10 @@ void VTParser::csiDispatch(quint8 finalByte) {
                     case 25: handler_->setCursorVisible(set); break;
                     case 1047: case 1049: case 47: handler_->setAltScreen(set); break;
                     case 2004: handler_->setBracketedPaste(set); break;
-                    default: break; // 1000/1002/1003/1006 mouse — TODO
+                    // SPEC-031 — mouse tracking.
+                    case 1000: case 1002: case 1003: case 1006:
+                        handler_->setMouseTracking(code, set); break;
+                    default: break;
                 }
             }
         }

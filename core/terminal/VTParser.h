@@ -83,6 +83,15 @@ public:
     virtual void setAltScreen(bool on)     = 0;
     virtual void setBracketedPaste(bool on)= 0;
 
+    /// SPEC-031 — DEC mouse tracking modes.
+    ///   1000 = X10 (button press only)
+    ///   1002 = button-event (press + drag)
+    ///   1003 = any-event (press + drag + bare move)
+    ///   1006 = SGR encoding (decimal, button + col + row + M/m)
+    /// When `on=true` the handler turns the mode on; off when false.
+    /// Default impl is a no-op so existing handlers don't need to override.
+    virtual void setMouseTracking(int mode, bool on) { Q_UNUSED(mode) Q_UNUSED(on) }
+
     // OSC events — strings only, parser handles framing (BEL or ST).
     virtual void osc(int code, const QString& payload) = 0;
 

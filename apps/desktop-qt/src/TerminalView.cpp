@@ -295,7 +295,92 @@ void TerminalView::mousePressEvent(QMouseEvent* event) {
         event->accept();
         return;
     }
+    if (mouseEventMode_ != 0) {
+        reportMouse(int(event->button()), event->modifiers(), event->position(), 'p');
+    }
     event->accept();
+}
+
+void TerminalView::mouseReleaseEvent(QMouseEvent* event) {
+    if (mouseEventMode_ != 0) {
+        reportMouse(int(event->button()), event->modifiers(), event->position(), 'r');
+    }
+    event->accept();
+}
+
+void TerminalView::mouseMoveEvent(QMouseEvent* event) {
+    // 1002 = button-event tracking — only while a button is held.
+    if (mouseEventMode_ == 1002 && event->buttons() != Qt::NoButton) {
+        reportMouse(int(event->buttons() & ~Qt::NoButton),
+                    event->modifiers(), event->position(), 'm');
+    }
+    event->accept();
+}
+
+void TerminalView::hoverMoveEvent(QHoverEvent* event) {
+    // 1003 = any-event — also reports bare moves (no button held).
+    if (mouseEventMode_ == 1003) {
+        reportMouse(int(Qt::NoButton), event->modifiers(),
+                    event->position(), 'm');
+    }
+    event->accept();
+}
+
+void TerminalView::setMouseTracking(int mode, bool on) {
+    if (mode == 1006) {
+        mouseSGR_ = on;
+        return;
+    }
+    if (on) {
+        mouseEventMode_ = mode;
+        setAcceptHoverEvents(mode == 1003);  // only enable hover for any-event
+        setAcceptedMouseButtons(Qt::LeftButton | Qt::MiddleButton | Qt::RightButton);
+    } else if (mouseEventMode_ == mode) {
+        mouseEventMode_ = 0;
+        setAcceptHoverEvents(false);
+    }
+}
+
+void TerminalView::reportMouse(int qtButton, Qt::KeyboardModifiers mods,
+                               QPointF localPos, char kind) {
+    if (mouseEventMode_ == 0) return;
+    // Cell coordinates (1-based, clamped).
+    int col = int(localPos.x() / cellW_) + 1;
+    int row = int(localPos.y() / cellH_) + 1;
+    if (col < 1) col = 1; if (row < 1) row = 1;
+    // Button code (per xterm convention):
+    //   0=left, 1=middle, 2=right, 3=release(legacy), 32+=motion, 64+=wheel
+    int cb;
+    switch (qtButton) {
+        case Qt::LeftButton:   cb = 0; break;
+        case Qt::MiddleButton: cb = 1; break;
+        case Qt::RightButton:  cb = 2; break;
+        default:               cb = 3; break;   // no button (motion-only)
+    }
+    if (kind == 'm') cb |= 32;
+    if (mods & Qt::ShiftModifier)   cb |= 4;
+    if (mods & Qt::AltModifier)     cb |= 8;
+    if (mods & Qt::ControlModifier) cb |= 16;
+
+    QByteArray seq;
+    if (mouseSGR_) {
+        const char trailer = (kind == 'r') ? 'm' : 'M';
+        seq = QStringLiteral("\x1b[<%1;%2;%3%4")
+                  .arg(cb).arg(col).arg(row).arg(QChar(trailer)).toLatin1();
+    } else {
+        // Legacy X10/1000 encoding — each byte is value + 32.
+        // For releases, button code becomes 3 (legacy).
+        int legacyCb = (kind == 'r') ? 3 : cb;
+        const int max = 223 - 32;
+        if (col > max + 1) col = max + 1;
+        if (row > max + 1) row = max + 1;
+        seq.reserve(6);
+        seq.append("\x1b[M");
+        seq.append(char(legacyCb + 32));
+        seq.append(char(col + 32));
+        seq.append(char(row + 32));
+    }
+    emit writeRequested(sessionId_, seq);
 }
 
 void TerminalView::wheelEvent(QWheelEvent* event) {
