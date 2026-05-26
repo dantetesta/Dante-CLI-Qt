@@ -18,20 +18,20 @@ TerminalSession* TerminalRegistry::spawn(const QString& sessionId,
         return nullptr;
     }
     auto* raw = s.get();
-    map_.insert(sessionId, std::move(s));
+    map_.emplace(sessionId, std::move(s));
     return raw;
 }
 
 TerminalSession* TerminalRegistry::find(const QString& sessionId) const {
-    auto it = map_.constFind(sessionId);
-    if (it == map_.constEnd()) return nullptr;
-    return it->get();
+    const auto it = map_.find(sessionId);
+    if (it == map_.end()) return nullptr;
+    return it->second.get();
 }
 
 void TerminalRegistry::dispose(const QString& sessionId) {
-    auto it = map_.find(sessionId);
+    const auto it = map_.find(sessionId);
     if (it == map_.end()) return;
-    it->get()->kill();
+    it->second->kill();
     map_.erase(it);
 }
 
