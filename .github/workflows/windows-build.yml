@@ -1,20 +1,21 @@
 # Build Windows binary + Inno Setup installer on every push and tag.
-# Output artifact: dist/Dante-CLI-Setup-<version>-x64.exe + raw build folder.
+# Artifacts: Dante-CLI-Setup-<version>-x64.exe and the raw deploy/ folder.
 name: windows-build
 
 on:
   push:
-    branches: [ main, develop ]
-    tags:     [ 'v*' ]
+    branches: [main, develop]
+    tags: ['v*']
   workflow_dispatch:
 
 env:
   QT_VERSION: 6.7.2
   BUILD_TYPE: Release
+  APP_VERSION: 0.7.0
 
 jobs:
   build:
-    name: Build (Windows x64, MSVC, Qt ${{ env.QT_VERSION }})
+    name: build-windows-x64
     runs-on: windows-latest
 
     steps:
@@ -24,12 +25,12 @@ jobs:
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
         with:
-          version:    ${{ env.QT_VERSION }}
-          host:       windows
-          target:     desktop
-          arch:       win64_msvc2019_64
-          modules:    'qtshadertools'
-          cache:      true
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          modules: qtshadertools
+          cache: true
           setup-python: false
 
       - name: Set up MSVC environment
@@ -40,49 +41,51 @@ jobs:
       - name: Configure (CMake + Ninja)
         shell: cmd
         run: |
-          cmake -S . -B build -G "Ninja Multi-Config" ^
+          cmake -S . -B build -G Ninja ^
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} ^
-            -DCMAKE_PREFIX_PATH="%Qt6_DIR%"
+            -DCMAKE_PREFIX_PATH="%QT_ROOT_DIR%"
 
       - name: Build
         shell: cmd
-        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+        run: cmake --build build --parallel
 
       - name: Collect deploy folder
         shell: pwsh
         run: |
           $exe = Get-ChildItem -Path build -Recurse -Filter "Dante CLI.exe" | Select-Object -First 1
-          if (-not $exe) { throw "exe not found" }
+          if (-not $exe) { throw "Dante CLI.exe not produced" }
           $deploy = Join-Path $env:GITHUB_WORKSPACE 'deploy'
           New-Item -ItemType Directory -Force -Path $deploy | Out-Null
-          Copy-Item $exe.DirectoryName\* $deploy -Recurse -Force
-          Get-ChildItem $deploy | Format-Table Name,Length
+          Copy-Item "$($exe.DirectoryName)\*" $deploy -Recurse -Force
+          Write-Host "Deploy contents:"
+          Get-ChildItem $deploy | Format-Table Name, Length
 
-      - name: Setup Inno Setup
-        uses: jrsoftware/issetup-action@v1
-        with:
-          version: '6.2.2'
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Compile installer
         shell: cmd
         run: |
           if not exist dist mkdir dist
-          iscc /Qp /DAppVersion=0.7.0 /DSourceDir=deploy /DOutputDir=dist installer\dante-cli.iss
+          iscc /Qp /DAppVersion=${{ env.APP_VERSION }} /DSourceDir=..\deploy /DOutputDir=..\dist installer\dante-cli.iss
 
-      - name: Upload installer artifact
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: Dante-CLI-Setup-windows-x64
           path: dist/*.exe
           if-no-files-found: error
 
-      - name: Upload raw build artifact
+      - name: Upload portable build
         uses: actions/upload-artifact@v4
         with:
           name: Dante-CLI-portable-windows-x64
           path: deploy/**
 
-      - name: Attach to GitHub release
+      - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
