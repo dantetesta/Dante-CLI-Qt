@@ -12,19 +12,14 @@ import QtQuick.Layouts 6.5
 import Qt.labs.platform 1.1 as Labs
 import "."
 
-Popup {
+MovablePopup {
     id: root
-    modal: true
-    focus: true
     width: 480
-    padding: 18
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-    background: Rectangle {
-        color: Theme.surfaceHigh
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
+    height: 280
+    minWidth: 360
+    minHeight: 220
+    title: qsTr("Abrir vídeo no slot")
+    icon: "🎬"
 
     /// Emitted when the user confirms; payload is either a URL string or a
     /// file:// path. GridWorkspace listens and binds the cell to this video.
@@ -32,10 +27,14 @@ Popup {
 
     onOpened: { urlField.text = ""; urlField.forceActiveFocus() }
 
-    contentItem: ColumnLayout {
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 18
         spacing: 12
 
+        // Title handled by MovablePopup header — keeping only the subtitle hint.
         Text {
+            visible: false
             text: qsTr("Abrir vídeo no slot")
             color: Theme.fgStrong
             font.family: Theme.fontSans
@@ -83,7 +82,7 @@ Popup {
                     text: parent.text
                     color: Theme.fgMuted
                     font.family: Theme.fontSans
-                    font.pixelSize: 11.5
+                    font.pixelSize: 12
                     leftPadding: 8; rightPadding: 8
                     verticalAlignment: Text.AlignVCenter
                 }

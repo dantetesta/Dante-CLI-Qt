@@ -31,6 +31,41 @@ Popup {
     property string editingTemplateId: ""
     property string editingTemplateName: ""
 
+    /// Map: tabId → bool. Drives the checkbox state in the "Abas pra dividir"
+    /// list (and counts toward the X/Y badge). Set on `onOpened` to mark all
+    /// tabs as selected by default — mirrors the Swift sibling.
+    property var selectedTabs: ({})
+
+    /// Helpers used by the Todas / Nenhuma links + count badge.
+    function selectAllTabs() {
+        const next = {}
+        if (!tabs) { root.selectedTabs = next; return }
+        for (let i = 0; i < tabs.rowCount(); ++i) {
+            const id = tabs.data(tabs.index(i, 0), tabsModelRoleId())
+            if (id) next[id] = true
+        }
+        root.selectedTabs = next
+    }
+    function selectNoneTabs() { root.selectedTabs = ({}) }
+    function toggleTabSelected(id) {
+        const next = Object.assign({}, root.selectedTabs)
+        if (next[id]) delete next[id]; else next[id] = true
+        root.selectedTabs = next
+    }
+    function selectedTabsCount() {
+        let n = 0
+        for (const _ in root.selectedTabs) n += 1
+        return n
+    }
+    /// Looks up the TabsModel role number for "tabId". Done lazily because
+    /// the model is registered as a context property and we can't import
+    /// the C++ enum directly into QML.
+    function tabsModelRoleId() {
+        const rn = tabs ? tabs.roleNames() : ({})
+        for (const k in rn) if (rn[k] === "tabId") return parseInt(k)
+        return 0
+    }
+
     /* ─── Look ─── */
     modal: true
     focus: true
@@ -112,15 +147,25 @@ Popup {
 
     /* ─── Hydrate when opening ───────────────────────────────────────── */
     onOpened: {
-        // Seed from current tab's split state.
-        const mode = appState.tabSplitMode(appState.activeTabId)
-        if (mode === "vertical")        { root.cols = 2; root.rows = 1 }
-        else if (mode === "horizontal") { root.cols = 1; root.rows = 2 }
-        else                            { root.cols = 2; root.rows = 1 }
-        root.spans = ({})
+        // Seed from current tab's grid (preferred) or split state.
+        const gc = appState.tabGridCols(appState.activeTabId)
+        const gr = appState.tabGridRows(appState.activeTabId)
+        if (gc > 0 && gr > 0) {
+            root.cols = gc
+            root.rows = gr
+            root.spans = appState.tabGridSpans(appState.activeTabId)
+        } else {
+            const mode = appState.tabSplitMode(appState.activeTabId)
+            if (mode === "vertical")        { root.cols = 2; root.rows = 1 }
+            else if (mode === "horizontal") { root.cols = 1; root.rows = 2 }
+            else                            { root.cols = 2; root.rows = 1 }
+            root.spans = ({})
+        }
         root.assignments = ({})
         root.editingTemplateId = ""
         root.editingTemplateName = ""
+        // Default: all open tabs are eligible for the workspace.
+        selectAllTabs()
     }
 
     /* ─── Apply / Cancel / Exit ──────────────────────────────────────── */
@@ -129,31 +174,41 @@ Popup {
     signal needsToastNotImplemented(string reason)
 
     function apply() {
-        // Map to existing 2-pane logic when possible.
+        // Always clear the existing 2-pane b-PTY first so the engines don't
+        // overlap. Then pick the right backend:
+        //   1 cell visible → single pane (clear grid + split)
+        //   2 cells visible AND a plain Nx1 / 1xN with no merges → 2-pane SplitContainer
+        //   anything else → GridWorkspace
+        const sb = appState.tabSecondSessionId(appState.activeTabId)
+        if (sb) terminal.kill(sb)
         const vis = visibleCount()
+        const noMerges = Object.keys(root.spans).length === 0
+
         if (vis === 1) {
-            // No split — collapse back to single pane.
-            const sb = appState.tabSecondSessionId(appState.activeTabId)
-            if (sb) terminal.kill(sb)
             appState.splitActive("")
-        } else if (root.cols === 2 && root.rows === 1 && Object.keys(root.spans).length === 0) {
+            appState.setTabGrid(appState.activeTabId, 0, 0, {})
+        } else if (vis === 2 && noMerges && root.cols === 2 && root.rows === 1) {
+            appState.setTabGrid(appState.activeTabId, 0, 0, {})
             appState.splitActive("vertical")
-        } else if (root.cols === 1 && root.rows === 2 && Object.keys(root.spans).length === 0) {
+        } else if (vis === 2 && noMerges && root.cols === 1 && root.rows === 2) {
+            appState.setTabGrid(appState.activeTabId, 0, 0, {})
             appState.splitActive("horizontal")
         } else {
-            root.needsToastNotImplemented(
-                qsTr("Grades %1×%2 (e mesclas) ainda usam o motor de 2 painéis — em breve.")
-                    .arg(root.cols).arg(root.rows))
+            // GridWorkspace path — the b-PTY split is cleared (setTabGrid
+            // does that internally), then the grid is persisted.
+            appState.setTabGrid(appState.activeTabId, root.cols, root.rows, root.spans)
         }
         root.applied()
         root.close()
     }
 
     function exitWorkspace() {
-        // Mirror Swift "Sair" — collapse back to single pane (kills b-PTY).
+        // Mirror Swift "Sair" — collapse back to single pane (kills b-PTY,
+        // clears grid state).
         const sb = appState.tabSecondSessionId(appState.activeTabId)
         if (sb) terminal.kill(sb)
         appState.splitActive("")
+        appState.setTabGrid(appState.activeTabId, 0, 0, {})
         root.close()
     }
 
@@ -510,7 +565,7 @@ Popup {
                 Text {
                     id: countText
                     anchors.centerIn: parent
-                    text: qsTr("%1/%2").arg(tabs ? tabs.rowCount() : 0).arg(tabs ? tabs.rowCount() : 0)
+                    text: qsTr("%1/%2").arg(root.selectedTabsCount()).arg(tabs ? tabs.rowCount() : 0)
                     color: Theme.fgMuted
                     font.pixelSize: 9
                     font.family: Theme.fontMono
@@ -522,7 +577,7 @@ Popup {
                 color: Theme.accent
                 font.family: Theme.fontSans
                 font.pixelSize: 11
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { /* TODO */ } }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.selectAllTabs() }
             }
             Text { text: "·"; color: Theme.fgFaint }
             Text {
@@ -530,19 +585,20 @@ Popup {
                 color: Theme.fgMuted
                 font.family: Theme.fontSans
                 font.pixelSize: 11
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { /* TODO */ } }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.selectNoneTabs() }
             }
         }
 
-        // Simple flat list of tabs as checkboxes (read-only assignment for now).
+        // Tabs list — each row toggles the selectedTabs map. Checkbox state
+        // is computed live from the map so Todas/Nenhuma reflect instantly.
         Repeater {
             model: tabs
             delegate: RowLayout {
                 Layout.fillWidth: true
                 spacing: 8
                 CheckBox {
-                    checked: false
-                    onCheckedChanged: { /* TODO: store per-slot assignment */ }
+                    checked: !!root.selectedTabs[model.tabId]
+                    onClicked: root.toggleTabSelected(model.tabId)
                 }
                 Text {
                     text: model.emoji && model.emoji.length > 0 ? model.emoji : "🌐"

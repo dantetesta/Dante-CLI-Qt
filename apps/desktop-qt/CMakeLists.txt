@@ -38,7 +38,8 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  AIOverlay AIMessage SchemePicker
                  PaneView SplitContainer CommandPalette VoiceWidget
                  UpdateBanner LayoutDesigner SettingsPanel
-                 EmptySlot VideoOpenDialog GridWorkspace FileTreeView)
+                 EmptySlot VideoOpenDialog GridWorkspace FileTreeView
+                 MovablePopup)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -80,6 +81,7 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/VideoOpenDialog.qml
         ../../ui/qml/GridWorkspace.qml
         ../../ui/qml/FileTreeView.qml
+        ../../ui/qml/MovablePopup.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml

@@ -10,6 +10,28 @@ namespace dante {
 namespace {
     QString newId() { return QUuid::createUuid().toString(QUuid::WithoutBraces); }
 
+    QJsonObject spansToJson(const QVariantMap& m) {
+        QJsonObject o;
+        for (auto it = m.constBegin(); it != m.constEnd(); ++it) {
+            const auto s = it.value().toMap();
+            int sc = s.value("cols").toInt(); if (sc <= 0) sc = 1;
+            int sr = s.value("rows").toInt(); if (sr <= 0) sr = 1;
+            o.insert(it.key(), QJsonObject{ {"cols", sc}, {"rows", sr} });
+        }
+        return o;
+    }
+    QVariantMap spansFromJson(const QJsonObject& o) {
+        QVariantMap m;
+        for (auto it = o.constBegin(); it != o.constEnd(); ++it) {
+            const auto s = it.value().toObject();
+            m.insert(it.key(), QVariantMap{
+                {"cols", s.value("cols").toInt(1)},
+                {"rows", s.value("rows").toInt(1)},
+            });
+        }
+        return m;
+    }
+
     QJsonObject tabToJson(const Tab& t) {
         return {
             {"id", t.id}, {"title", t.title}, {"color", t.color},
@@ -19,6 +41,9 @@ namespace {
             {"splitMode", t.splitMode},
             {"secondSessionId", t.secondSessionId},
             {"splitFraction", t.splitFraction},
+            {"gridCols", t.gridCols},
+            {"gridRows", t.gridRows},
+            {"gridSpans", spansToJson(t.gridSpans)},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -34,6 +59,9 @@ namespace {
         t.splitMode = o.value("splitMode").toString();
         t.secondSessionId = o.value("secondSessionId").toString();
         t.splitFraction = o.value("splitFraction").toDouble(0.5);
+        t.gridCols = o.value("gridCols").toInt(0);
+        t.gridRows = o.value("gridRows").toInt(0);
+        t.gridSpans = spansFromJson(o.value("gridSpans").toObject());
         return t;
     }
 }
@@ -220,6 +248,46 @@ void AppState::setTabSplitFraction(const QString& tabId, double f) {
     f = std::clamp(f, 0.05, 0.95);
     if (qFuzzyCompare(tabs_[i].splitFraction, f)) return;
     tabs_[i].splitFraction = f;
+    persistSession();
+}
+
+int AppState::tabGridCols(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? 0 : tabs_[i].gridCols;
+}
+int AppState::tabGridRows(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? 0 : tabs_[i].gridRows;
+}
+QVariantMap AppState::tabGridSpans(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QVariantMap() : tabs_[i].gridSpans;
+}
+
+void AppState::setTabGrid(const QString& tabId, int cols, int rows, const QVariantMap& spans) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+    // cols/rows == 0 → clear grid, restore single-pane.
+    if (cols <= 0 || rows <= 0) {
+        if (t.gridCols == 0 && t.gridRows == 0) return;
+        t.gridCols = 0;
+        t.gridRows = 0;
+        t.gridSpans.clear();
+        emit tabSplitChanged(t.id);
+        persistSession();
+        return;
+    }
+    cols = qBound(1, cols, 6);
+    rows = qBound(1, rows, 6);
+    // Switching INTO grid mode also clears the 2-pane state so the two
+    // worlds never conflict.
+    t.splitMode.clear();
+    t.secondSessionId.clear();
+    t.gridCols = cols;
+    t.gridRows = rows;
+    t.gridSpans = spans;
+    emit tabSplitChanged(t.id);
     persistSession();
 }
 

@@ -7,15 +7,14 @@ import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
 import ".."
 
-Popup {
+MovablePopup {
     id: root
-    modal: true
-    focus: true
-    padding: 0
-
     width: 620
     height: 640
-    anchors.centerIn: parent
+    minWidth: 460
+    minHeight: 440
+    title: existingId.length > 0 ? qsTr("Editar Credencial") : qsTr("Nova Credencial")
+    icon: "🔐"
 
     // CredentialKind enum: 0=Ssh, 1=Ftp, 2=Api, 3=Database, 4=Custom.
     // Numbering matches `dante::CredentialKind`. Updating here without
@@ -149,13 +148,6 @@ Popup {
         return false
     }
 
-    background: Rectangle {
-        color: Theme.surface
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
-
     EmojiPicker {
         id: emojiPicker
         onSelected: function(e) { root.emojiText = e }
@@ -166,13 +158,7 @@ Popup {
         anchors.margins: 18
         spacing: 12
 
-        Text {
-            text: root.existingId.length > 0 ? "Editar Credencial" : "Nova Credencial"
-            color: Theme.fgStrong
-            font.family: Theme.fontSans
-            font.pixelSize: 16
-            font.weight: Font.DemiBold
-        }
+        // Title rendered by MovablePopup's drag header.
 
         // Name + Kind + Emoji
         RowLayout {

@@ -9,15 +9,14 @@ import QtQuick.Layouts 6.5
 import QtQuick.Dialogs 6.5
 import ".."
 
-Popup {
+MovablePopup {
     id: root
-    modal: true
-    focus: true
-    padding: 0
-
     width: 520
     height: 560
-    anchors.centerIn: parent
+    minWidth: 420
+    minHeight: 420
+    title: existingId.length > 0 ? qsTr("Editar Favorito") : qsTr("Novo Favorito")
+    icon: "⭐"
 
     /// Empty when creating; populated when editing.
     property string existingId: ""
@@ -47,13 +46,6 @@ Popup {
         tagsText           = m && m.tags ? (m.tags.join ? m.tags.join(", ") : "") : ""
     }
     function reset() { loadFromMap(null) }
-
-    background: Rectangle {
-        color: Theme.surface
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
 
     onOpened: nameField.forceActiveFocus()
 
@@ -91,13 +83,7 @@ Popup {
         anchors.margins: 18
         spacing: 12
 
-        Text {
-            text: root.existingId.length > 0 ? "Editar Favorito" : "Novo Favorito"
-            color: Theme.fgStrong
-            font.family: Theme.fontSans
-            font.pixelSize: 16
-            font.weight: Font.DemiBold
-        }
+        // Title is rendered by MovablePopup's drag header now.
 
         // Name
         ColumnLayout {

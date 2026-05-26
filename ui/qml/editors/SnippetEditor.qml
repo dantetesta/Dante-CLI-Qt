@@ -4,16 +4,16 @@ import QtQuick 6.5
 import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
 import ".."
+// MovablePopup lives one directory up.
 
-Popup {
+MovablePopup {
     id: root
-    modal: true
-    focus: true
-    padding: 0
-
     width: 560
     height: 520
-    anchors.centerIn: parent
+    minWidth: 420
+    minHeight: 360
+    title: existingId.length > 0 ? qsTr("Editar Snippet") : qsTr("Novo Snippet")
+    icon: "⚡"
 
     property string existingId: ""
     property string nameText: ""
@@ -33,13 +33,6 @@ Popup {
     }
     function reset() { loadFromMap(null) }
 
-    background: Rectangle {
-        color: Theme.surface
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
-
     onOpened: nameField.forceActiveFocus()
 
     EmojiPicker {
@@ -51,14 +44,6 @@ Popup {
         anchors.fill: parent
         anchors.margins: 18
         spacing: 12
-
-        Text {
-            text: root.existingId.length > 0 ? "Editar Snippet" : "Novo Snippet"
-            color: Theme.fgStrong
-            font.family: Theme.fontSans
-            font.pixelSize: 16
-            font.weight: Font.DemiBold
-        }
 
         RowLayout {
             Layout.fillWidth: true

@@ -61,6 +61,17 @@ public:
     /// collapsing a pane to invisibility from a frantic drag.
     Q_INVOKABLE void setTabSplitFraction(const QString& tabId, double f);
 
+    /* ─── Multi-pane GRID workspace (cols × rows + merge spans) ─── */
+    /// Returns 0 when the tab is in single-pane or 2-pane split mode.
+    Q_INVOKABLE int tabGridCols(const QString& tabId) const;
+    Q_INVOKABLE int tabGridRows(const QString& tabId) const;
+    /// Spans map as cellIndex (string) → {"cols": N, "rows": M}.
+    Q_INVOKABLE QVariantMap tabGridSpans(const QString& tabId) const;
+    /// Switch the tab into grid-workspace mode. Pass cols=0 OR rows=0 to
+    /// clear back to single-pane (any active b-PTY should be killed by the
+    /// caller before invoking — same convention as splitActive("")).
+    Q_INVOKABLE void setTabGrid(const QString& tabId, int cols, int rows, const QVariantMap& spans);
+
     /* ─── Settings ─── */
     QString groqApiKey() const { return settings_.groqApiKey; }
     void setGroqApiKey(QString v);

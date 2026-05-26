@@ -15,10 +15,61 @@ namespace dante {
 FileTreeController::FileTreeController(QObject* parent)
     : QObject(parent)
 {
-    model_.setRootPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
-    model_.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden);
+    // Watch the whole filesystem so any path the user navigates to is live.
+    // (Setting "" tells QFileSystemModel to watch the root of the filesystem.)
+    model_.setRootPath(QStringLiteral("/"));
     model_.setReadOnly(false);
     model_.setNameFilterDisables(false);
+    applyFilter();
+}
+
+void FileTreeController::applyFilter() {
+    QDir::Filters f = QDir::AllEntries | QDir::NoDotAndDotDot;
+    if (showHidden_) f |= QDir::Hidden | QDir::System;
+    model_.setFilter(f);
+}
+
+void FileTreeController::setShowHidden(bool v) {
+    if (showHidden_ == v) return;
+    showHidden_ = v;
+    applyFilter();
+    emit showHiddenChanged();
+}
+
+QVariantList FileTreeController::quickPlaces() const {
+    QVariantList out;
+    auto add = [&](const QString& label, const QString& path, const QString& icon) {
+        if (path.isEmpty() || !QFileInfo::exists(path)) return;
+        out.append(QVariantMap{{"label", label}, {"path", path}, {"icon", icon}});
+    };
+
+    add(QStringLiteral("Início"),
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation), "🏠");
+    add(QStringLiteral("Desktop"),
+        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), "🖥");
+    add(QStringLiteral("Documentos"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "📄");
+    add(QStringLiteral("Downloads"),
+        QStandardPaths::writableLocation(QStandardPaths::DownloadLocation), "⬇");
+    add(QStringLiteral("/"), QStringLiteral("/"), "💽");
+
+#if defined(Q_OS_MAC)
+    // List mounted volumes under /Volumes — gives access to external disks,
+    // Time Machine, USB, etc.
+    QDir vols(QStringLiteral("/Volumes"));
+    for (const auto& fi : vols.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        out.append(QVariantMap{{"label", fi.fileName()}, {"path", fi.absoluteFilePath()}, {"icon", "💾"}});
+    }
+#elif defined(Q_OS_WIN)
+    // Each lettered drive (C:/, D:/, …).
+    for (const auto& fi : QDir::drives()) {
+        out.append(QVariantMap{{"label", fi.absolutePath()},
+                               {"path",  fi.absolutePath()},
+                               {"icon",  "💽"}});
+    }
+#endif
+
+    return out;
 }
 
 QString FileTreeController::rootPath() const {

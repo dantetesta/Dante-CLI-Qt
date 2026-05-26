@@ -18,8 +18,9 @@ namespace dante {
 
 class FileTreeController : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QFileSystemModel* model    READ model    CONSTANT)
-    Q_PROPERTY(QString           rootPath READ rootPath WRITE setRootPath NOTIFY rootChanged)
+    Q_PROPERTY(QFileSystemModel* model      READ model       CONSTANT)
+    Q_PROPERTY(QString           rootPath   READ rootPath    WRITE setRootPath   NOTIFY rootChanged)
+    Q_PROPERTY(bool              showHidden READ showHidden  WRITE setShowHidden NOTIFY showHiddenChanged)
 public:
     explicit FileTreeController(QObject* parent = nullptr);
 
@@ -30,6 +31,14 @@ public:
 
     /// Root QModelIndex for binding TreeView::rootIndex.
     Q_INVOKABLE QModelIndex rootIndex() const;
+
+    /// Show / hide dotfiles and Hidden-attributed files.
+    bool showHidden() const { return showHidden_; }
+    void setShowHidden(bool v);
+
+    /// Quick-jump destinations for the header (Home, /, /Volumes, drives).
+    /// Each entry is { "label": str, "path": str, "icon": str }.
+    Q_INVOKABLE QVariantList quickPlaces() const;
 
     /// Resolve a model index to absolute filesystem path.
     Q_INVOKABLE QString filePath(const QModelIndex& idx) const;
@@ -53,10 +62,14 @@ public:
 
 signals:
     void rootChanged();
+    void showHiddenChanged();
     void operationFailed(const QString& reason);
 
 private:
+    void applyFilter();
+
     QFileSystemModel model_;
+    bool             showHidden_{false};
 };
 
 } // namespace dante

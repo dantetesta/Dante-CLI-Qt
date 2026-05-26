@@ -18,6 +18,56 @@ Item {
         anchors.fill: parent
         spacing: 0
 
+        /* ─── Quick-place strip (Início / Desktop / Downloads / / / drives…) ─── */
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 34
+            color: Theme.surface
+            Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: Theme.borderSoft }
+
+            ListView {
+                id: placesList
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                orientation: ListView.Horizontal
+                spacing: 4
+                clip: true
+                model: fileTree.quickPlaces()
+                delegate: Rectangle {
+                    height: placesList.height - 8
+                    width: lbl.implicitWidth + ico.implicitWidth + 18
+                    radius: Theme.radiusSm
+                    color: (fileTree.rootPath === modelData.path)
+                        ? Theme.accentDim
+                        : (qpMa.containsMouse ? Theme.surfaceHigh : "transparent")
+                    border.color: (fileTree.rootPath === modelData.path) ? Theme.accentSoft : "transparent"
+                    border.width: 1
+                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text { id: ico; text: modelData.icon; font.pixelSize: 12 }
+                        Text {
+                            id: lbl
+                            text: modelData.label
+                            color: (fileTree.rootPath === modelData.path) ? Theme.accent : Theme.fg
+                            font.family: Theme.fontSans
+                            font.pixelSize: 11
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea {
+                        id: qpMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: fileTree.rootPath = modelData.path
+                    }
+                }
+            }
+        }
+
         /* ─── Path header / toolbar ─── */
         Rectangle {
             Layout.fillWidth: true
@@ -36,18 +86,32 @@ Item {
                     tip: qsTr("Pasta acima")
                     onClicked: {
                         const p = fileTree.rootPath
-                        const parent = p.substring(0, p.lastIndexOf("/"))
-                        if (parent.length > 0) fileTree.rootPath = parent
+                        if (p === "/" || p.length === 0) return
+                        const cut = p.lastIndexOf("/")
+                        fileTree.rootPath = cut <= 0 ? "/" : p.substring(0, cut)
                     }
                 }
                 Text {
                     Layout.fillWidth: true
-                    text: fileTree.rootPath.split("/").pop() || fileTree.rootPath
+                    text: {
+                        const p = fileTree.rootPath
+                        if (p === "/") return "/"
+                        return p.split("/").pop() || p
+                    }
                     color: Theme.fg
                     font.family: Theme.fontSans
                     font.pixelSize: 12
                     font.weight: Font.Medium
                     elide: Text.ElideMiddle
+                    ToolTip.text: fileTree.rootPath
+                    ToolTip.visible: hoverHandler.hovered
+                    ToolTip.delay: 400
+                    HoverHandler { id: hoverHandler }
+                }
+                IconBtn {
+                    glyph: fileTree.showHidden ? "👁" : "👁​"
+                    tip: fileTree.showHidden ? qsTr("Ocultar arquivos ocultos") : qsTr("Mostrar arquivos ocultos")
+                    onClicked: fileTree.showHidden = !fileTree.showHidden
                 }
                 IconBtn { glyph: "📁+"; tip: qsTr("Nova pasta"); onClicked: newDlg.openFor("folder", fileTree.rootPath) }
                 IconBtn { glyph: "📄+"; tip: qsTr("Novo arquivo"); onClicked: newDlg.openFor("file", fileTree.rootPath) }
@@ -78,9 +142,11 @@ Item {
                 implicitHeight: 26
 
                 // Required TreeView delegate properties — see Qt docs for
-                // "Qt Quick TreeView delegate". `index` from the model is
-                // an int row number, not a QModelIndex; resolve via
-                // treeView.index(row, column) to get the real QModelIndex.
+                // "Qt Quick TreeView delegate". `display` is the QFileSystem
+                // model's default role (= the file name). We pull the path
+                // lazily — only when the user does something with the row —
+                // because calling the C++ controller per paint caused all
+                // visible rows to mis-resolve and show the same name.
                 required property TreeView treeView
                 required property bool isTreeNode
                 required property bool expanded
@@ -88,11 +154,15 @@ Item {
                 required property int  depth
                 required property int  row
                 required property int  column
+                required property string display
 
-                readonly property var    modelIndex: treeView.index(row, column)
-                readonly property string path: fileTree.filePath(modelIndex)
-                readonly property bool   isDir: fileTree.isDir(modelIndex)
-                readonly property string fileName: fileTree.fileName(modelIndex)
+                readonly property string fileName: display
+                // Resolved on demand (right-click, drag, double-click).
+                // Computing in a property is fine because the TreeView only
+                // re-evaluates it when row/column actually change.
+                function modelIndex() { return treeView.index(row, column) }
+                function path()       { return fileTree.filePath(modelIndex()) }
+                function isDir()      { return fileTree.isDir(modelIndex()) }
 
                 // Hover / selection bg.
                 Rectangle {
@@ -103,18 +173,20 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: depth * 16 + 4
+                    anchors.leftMargin: row.depth * 16 + 4
                     anchors.rightMargin: 4
                     spacing: 4
 
-                    // Disclosure triangle.
+                    // Disclosure triangle — visible whenever the tree node
+                    // *can* have children (QFileSystemModel says yes for all
+                    // directories before it has fetched them).
                     Item {
                         Layout.preferredWidth: 14
                         Layout.preferredHeight: 14
-                        visible: isDir
+                        visible: row.hasChildren
                         Text {
                             anchors.centerIn: parent
-                            text: expanded ? "▾" : "▸"
+                            text: row.expanded ? "▾" : "▸"
                             color: Theme.fgMuted
                             font.pixelSize: 10
                         }
@@ -122,19 +194,19 @@ Item {
                             anchors.fill: parent
                             anchors.margins: -4
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: treeView.toggleExpanded(row)
+                            onClicked: row.treeView.toggleExpanded(row.row)
                         }
                     }
-                    Item { Layout.preferredWidth: 14; visible: !isDir }
+                    Item { Layout.preferredWidth: 14; visible: !row.hasChildren }
 
                     // Icon (folder / file glyph).
                     Text {
-                        text: isDir ? "📁" : iconForExtension(fileName)
+                        text: row.hasChildren ? "📁" : iconForExtension(row.fileName)
                         font.pixelSize: 13
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: fileName
+                        text: row.fileName
                         color: Theme.fg
                         font.family: Theme.fontSans
                         font.pixelSize: 12
@@ -152,18 +224,18 @@ Item {
                     drag.target: dragGhost
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.RightButton) {
-                            menu.targetPath = path
-                            menu.targetIsDir = isDir
+                            menu.targetPath = row.path()
+                            menu.targetIsDir = row.isDir()
                             menu.popup()
                         }
                     }
                     onDoubleClicked: {
-                        if (isDir) {
+                        if (row.isDir()) {
                             // Drilling: make this folder the new root (the Swift
                             // sibling does the same — double-click navigates in).
-                            fileTree.rootPath = path
+                            fileTree.rootPath = row.path()
                         } else {
-                            fileTree.openExternally(path)
+                            fileTree.openExternally(row.path())
                         }
                     }
                     onPressed: (mouse) => {
@@ -187,12 +259,12 @@ Item {
                     Drag.active: rowMa.drag.active
                     Drag.dragType: Drag.Automatic
                     Drag.supportedActions: Qt.CopyAction
-                    Drag.mimeData: { "text/uri-list": "file://" + row.path,
-                                     "text/plain":    row.path }
+                    Drag.mimeData: { "text/uri-list": "file://" + row.path(),
+                                     "text/plain":    row.path() }
                     Text {
                         id: dragLabel
                         anchors.centerIn: parent
-                        text: (row.isDir ? "📁 " : "📄 ") + row.fileName
+                        text: (row.isDir() ? "📁 " : "📄 ") + row.fileName
                         color: "white"
                         font.family: Theme.fontSans
                         font.pixelSize: 11
