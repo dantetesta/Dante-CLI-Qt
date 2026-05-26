@@ -287,16 +287,8 @@ Rectangle {
                 }
             }
 
-            // 1 — Pastas (placeholder). Wrapped in an Item so the layout-managed
-            // StackLayout doesn't choke on anchors-on-leaf-Text.
-            Item {
-                Text {
-                    text: "Files tree (em breve)"
-                    color: Theme.fgFaint
-                    anchors.centerIn: parent
-                    font.pixelSize: 12
-                }
-            }
+            // 1 — Pastas (file system tree with right-click menu + drag).
+            FileTreeView {}
 
             // 2 — Snippets
             ListView {

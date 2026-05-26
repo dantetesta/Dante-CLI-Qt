@@ -58,6 +58,13 @@ void AppState::hydrate() {
             settings_.sidebarWidth       = o.value("sidebarWidth").toInt(280);
             settings_.sidebarMode        = SidebarMode(o.value("sidebarMode").toInt(0));
             settings_.rightSidebarVisible= o.value("rightSidebarVisible").toBool(false);
+            settings_.shellOverride      = o.value("shellOverride").toString();
+            settings_.restoreOnLaunch    = o.value("restoreOnLaunch").toBool(true);
+            settings_.voiceLanguage      = o.value("voiceLanguage").toString("pt");
+            settings_.voiceModel         = o.value("voiceModel").toString("whisper-large-v3-turbo");
+            settings_.voiceAutoSubmit    = o.value("voiceAutoSubmit").toBool(false);
+            settings_.appearance         = AppearanceMode(o.value("appearance").toInt(int(AppearanceMode::Dark)));
+            settings_.autoCheckUpdates   = o.value("autoCheckUpdates").toBool(true);
         }
     }
     emit settingsChanged();
@@ -169,6 +176,14 @@ void AppState::setGroqApiKey(QString v)     { settings_.groqApiKey = std::move(v
 void AppState::setTerminalScheme(QString v) { settings_.terminalScheme = std::move(v); emit settingsChanged(); persistSettings(); }
 void AppState::setFontName(QString v)       { settings_.fontName = std::move(v);       emit settingsChanged(); persistSettings(); }
 void AppState::setFontSize(int v)           { settings_.fontSize = v;                  emit settingsChanged(); persistSettings(); }
+void AppState::setShellOverride(QString v)  { settings_.shellOverride = std::move(v);  emit settingsChanged(); persistSettings(); }
+void AppState::setScrollback(int v)         { settings_.scrollback = qMax(1000, v);    emit settingsChanged(); persistSettings(); }
+void AppState::setRestoreOnLaunch(bool v)   { settings_.restoreOnLaunch = v;           emit settingsChanged(); persistSettings(); }
+void AppState::setVoiceLanguage(QString v)  { settings_.voiceLanguage = std::move(v);  emit settingsChanged(); persistSettings(); }
+void AppState::setVoiceModel(QString v)     { settings_.voiceModel = std::move(v);     emit settingsChanged(); persistSettings(); }
+void AppState::setVoiceAutoSubmit(bool v)   { settings_.voiceAutoSubmit = v;           emit settingsChanged(); persistSettings(); }
+void AppState::setAppearanceMode(int v)     { settings_.appearance = AppearanceMode(qBound(0, v, 2)); emit settingsChanged(); persistSettings(); }
+void AppState::setAutoCheckUpdates(bool v)  { settings_.autoCheckUpdates = v;          emit settingsChanged(); persistSettings(); }
 
 /* ─── Split panes ─────────────────────────────────────────────────────────── */
 
@@ -278,6 +293,13 @@ void AppState::persistSettings() {
         {"sidebarWidth",        settings_.sidebarWidth},
         {"sidebarMode",         int(settings_.sidebarMode)},
         {"rightSidebarVisible", settings_.rightSidebarVisible},
+        {"shellOverride",       settings_.shellOverride},
+        {"restoreOnLaunch",     settings_.restoreOnLaunch},
+        {"voiceLanguage",       settings_.voiceLanguage},
+        {"voiceModel",          settings_.voiceModel},
+        {"voiceAutoSubmit",     settings_.voiceAutoSubmit},
+        {"appearance",          int(settings_.appearance)},
+        {"autoCheckUpdates",    settings_.autoCheckUpdates},
     }));
 }
 

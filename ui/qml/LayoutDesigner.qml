@@ -25,6 +25,12 @@ Popup {
     /// Map: cellIndex → tabId.  When the cell is unassigned this maps to "".
     property var  assignments: ({})
 
+    /// Set when the user loaded an existing template — Salvar will update it
+    /// in place instead of creating a new one. Cleared when cols/rows/spans
+    /// change to something genuinely new.
+    property string editingTemplateId: ""
+    property string editingTemplateName: ""
+
     /* ─── Look ─── */
     modal: true
     focus: true
@@ -113,6 +119,8 @@ Popup {
         else                            { root.cols = 2; root.rows = 1 }
         root.spans = ({})
         root.assignments = ({})
+        root.editingTemplateId = ""
+        root.editingTemplateName = ""
     }
 
     /* ─── Apply / Cancel / Exit ──────────────────────────────────────── */
@@ -184,8 +192,7 @@ Popup {
             Item { Layout.fillWidth: true }
         }
 
-        /* Templates (placeholder for now — to be wired to a future
-           AppState.layoutTemplates once persistence is in place). */
+        /* Templates */
         Text {
             text: qsTr("Templates salvos")
             color: Theme.fg
@@ -195,15 +202,118 @@ Popup {
         }
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 70
+            Layout.preferredHeight: 96
             radius: Theme.radiusMd
             color: Theme.surface
             border.color: Theme.borderSoft
+
+            // Empty-state hint.
             Text {
                 anchors.centerIn: parent
-                text: qsTr("Salve um layout para reutilizar — em breve")
+                text: qsTr("Salve um layout pra reutilizar (botão Salvar abaixo)")
                 color: Theme.fgFaint
                 font.pixelSize: 11
+                visible: !templates || templates.list.length === 0
+            }
+
+            // Horizontal scroll of cards.
+            ScrollView {
+                anchors.fill: parent
+                anchors.margins: 8
+                clip: true
+                visible: templates && templates.list.length > 0
+
+                Row {
+                    spacing: 8
+                    Repeater {
+                        model: templates ? templates.list : []
+                        delegate: Rectangle {
+                            id: card
+                            width: 110
+                            height: 78
+                            radius: 8
+                            color: cardMa.containsMouse ? Theme.surfaceTop : Theme.surfaceLow
+                            border.color: Theme.borderSoft
+                            border.width: 1
+                            Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 2
+                                Text {
+                                    text: (modelData.emoji && modelData.emoji.length > 0 ? modelData.emoji + " " : "") + (modelData.name || "")
+                                    color: Theme.fgStrong
+                                    font.family: Theme.fontSans
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                                Text {
+                                    text: "%1×%2 · %3 painéis"
+                                        .arg(modelData.cols).arg(modelData.rows)
+                                        .arg(templates.visiblePanelCount(modelData.cols, modelData.rows, modelData.spans))
+                                    color: Theme.fgFaint
+                                    font.family: Theme.fontMono
+                                    font.pixelSize: 9
+                                }
+                                Item { Layout.fillHeight: true }
+                                // Mini-thumbnail strip (just shows cols×rows count visually).
+                                RowLayout {
+                                    spacing: 2
+                                    Layout.fillWidth: true
+                                    Repeater {
+                                        model: Math.min(6, modelData.cols * modelData.rows)
+                                        delegate: Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 8
+                                            radius: 2
+                                            color: Theme.accentSoft
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Tiny × delete button (visible on hover).
+                            Rectangle {
+                                width: 16; height: 16; radius: 8
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: -4
+                                color: delMa.containsMouse ? Theme.danger : Theme.surfaceHigh
+                                visible: cardMa.containsMouse || delMa.containsMouse
+                                border.color: Theme.border
+                                Text { anchors.centerIn: parent; text: "×"; color: "white"; font.pixelSize: 10; font.bold: true }
+                                MouseArea {
+                                    id: delMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: templates.remove(modelData.id)
+                                }
+                            }
+
+                            MouseArea {
+                                id: cardMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    // Load this template into the editor.
+                                    root.cols = modelData.cols
+                                    root.rows = modelData.rows
+                                    // Clone the spans map (defensive — modelData.spans is a JS view of QVariantMap).
+                                    const cloned = {}
+                                    for (const k in modelData.spans) cloned[k] = modelData.spans[k]
+                                    root.spans = cloned
+                                    root.editingTemplateId = modelData.id
+                                    root.editingTemplateName = modelData.name
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -464,13 +574,19 @@ Popup {
 
             Item { Layout.fillWidth: true }
 
-            // Salvar (placeholder — templates not yet persisted)
+            // Salvar — opens a small name prompt (or updates the loaded
+            // template in place).
             Button {
-                text: "🔖  " + qsTr("Salvar")
+                text: "🔖  " + (root.editingTemplateId !== "" ? qsTr("Salvar") : qsTr("Salvar como…"))
                 flat: true
-                enabled: false
-                background: null
-                contentItem: Text { text: parent.text; color: Theme.accent; font.pixelSize: 12 }
+                enabled: true
+                onClicked: saveDialog.open()
+                background: Rectangle {
+                    color: parent.hovered ? Theme.surfaceTop : "transparent"
+                    radius: Theme.radiusSm
+                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+                }
+                contentItem: Text { text: parent.text; color: Theme.accent; font.pixelSize: 12; leftPadding: 8; rightPadding: 8; verticalAlignment: Text.AlignVCenter }
             }
             // Sair = collapse the workspace back to single pane.
             Button {
@@ -521,6 +637,118 @@ Popup {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     leftPadding: 14; rightPadding: 14
+                }
+            }
+        }
+    }
+
+    /* ─── Name prompt (Salvar) ─── */
+    Popup {
+        id: saveDialog
+        modal: true
+        focus: true
+        anchors.centerIn: parent
+        width: 360
+        padding: 16
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+        background: Rectangle {
+            color: Theme.surface
+            border.color: Theme.borderStrong
+            border.width: 1
+            radius: Theme.radiusMd
+        }
+
+        onOpened: {
+            nameField.text = root.editingTemplateName.length > 0
+                ? root.editingTemplateName
+                : qsTr("%1×%2").arg(root.cols).arg(root.rows)
+            nameField.forceActiveFocus()
+            nameField.selectAll()
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 14
+            Text {
+                text: root.editingTemplateId !== ""
+                    ? qsTr("Atualizar template")
+                    : qsTr("Salvar layout como template")
+                color: Theme.fgStrong
+                font.family: Theme.fontSans
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+            }
+            ColumnLayout {
+                spacing: 4
+                Layout.fillWidth: true
+                Text {
+                    text: qsTr("Nome")
+                    color: Theme.fgMuted
+                    font.pixelSize: 11
+                }
+                TextField {
+                    id: nameField
+                    Layout.fillWidth: true
+                    color: Theme.fg
+                    placeholderText: qsTr("Ex.: Dev 3 painéis")
+                    selectByMouse: true
+                    Keys.onReturnPressed: saveBtn.clicked()
+                    background: Rectangle {
+                        color: Theme.surfaceHigh
+                        border.color: Theme.border
+                        border.width: 1
+                        radius: Theme.radiusSm
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                Button {
+                    text: qsTr("Cancelar")
+                    onClicked: saveDialog.close()
+                    background: Rectangle {
+                        color: parent.hovered ? Theme.surfaceTop : Theme.surfaceHigh
+                        border.color: Theme.border
+                        radius: Theme.radiusSm
+                        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+                    }
+                    contentItem: Text { text: parent.text; color: Theme.fg; font.pixelSize: 12; leftPadding: 12; rightPadding: 12; verticalAlignment: Text.AlignVCenter }
+                }
+                Button {
+                    id: saveBtn
+                    text: qsTr("Salvar")
+                    enabled: nameField.text.trim().length > 0
+                    onClicked: {
+                        const newId = templates.save(
+                            root.editingTemplateId,
+                            nameField.text,
+                            "",
+                            root.cols,
+                            root.rows,
+                            root.spans
+                        )
+                        if (newId && newId.length > 0) {
+                            root.editingTemplateId = newId
+                            root.editingTemplateName = nameField.text
+                        }
+                        saveDialog.close()
+                    }
+                    background: Rectangle {
+                        color: parent.enabled
+                            ? (parent.hovered ? Qt.lighter(Theme.accent, 1.1) : Theme.accent)
+                            : Theme.surfaceTop
+                        radius: Theme.radiusSm
+                        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.enabled ? "white" : Theme.fgDim
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        leftPadding: 14; rightPadding: 14
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
             }
         }

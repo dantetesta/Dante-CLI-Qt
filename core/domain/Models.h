@@ -48,6 +48,13 @@ struct Tab {
     QString splitMode;
     QString secondSessionId;
     double  splitFraction{0.5};   // 0..1 — first pane's share (left if vertical, top if horizontal)
+
+    // Multi-pane grid workspace. When `gridCols * gridRows > 2` (or any merge
+    // is present) the Terminal pane renders a GridWorkspace instead of the
+    // 2-pane SplitContainer. `gridSpans` maps "cellIndex" → {"cols","rows"}.
+    int         gridCols{0};      // 0 = no grid workspace; fall back to splitMode
+    int         gridRows{0};
+    QVariantMap gridSpans;
 };
 
 // -----------------------------------------------------------------------------

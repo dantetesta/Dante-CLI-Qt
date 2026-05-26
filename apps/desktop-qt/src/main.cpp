@@ -18,6 +18,8 @@
 #include "VoiceController.h"
 #include "UpdateController.h"
 #include "TrayController.h"
+#include "LayoutTemplatesController.h"
+#include "FileTreeController.h"
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
@@ -35,7 +37,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.9");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.10");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -65,6 +67,8 @@ int main(int argc, char* argv[]) {
     auto* voice      = new dante::VoiceController(appState, /*groq*/ nullptr, &app);
     auto* schemes    = new dante::themes::ThemeRegistry(&app);
     auto* updater    = new dante::UpdateController(&app);
+    auto* templates  = new dante::LayoutTemplatesController(&app);
+    auto* fileTree   = new dante::FileTreeController(&app);
 
     appState->hydrate();
     favorites->hydrate();
@@ -119,6 +123,8 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);
     engine.rootContext()->setContextProperty("updater",    updater);
+    engine.rootContext()->setContextProperty("templates",  templates);
+    engine.rootContext()->setContextProperty("fileTree",   fileTree);
 
     // Kick off a first update check after the UI is up (deferred so a slow
     // network probe doesn't delay window-show).

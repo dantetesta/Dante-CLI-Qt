@@ -26,6 +26,10 @@ qt_add_executable(dante-cli WIN32
     src/UpdateController.h
     src/TrayController.cpp
     src/TrayController.h
+    src/LayoutTemplatesController.cpp
+    src/LayoutTemplatesController.h
+    src/FileTreeController.cpp
+    src/FileTreeController.h
 )
 
 # QML aliases — root files first, then editors/* preserves the relative path so
@@ -33,7 +37,8 @@ qt_add_executable(dante-cli WIN32
 foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  AIOverlay AIMessage SchemePicker
                  PaneView SplitContainer CommandPalette VoiceWidget
-                 UpdateBanner LayoutDesigner SettingsPanel)
+                 UpdateBanner LayoutDesigner SettingsPanel
+                 EmptySlot VideoOpenDialog GridWorkspace FileTreeView)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -71,6 +76,10 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/UpdateBanner.qml
         ../../ui/qml/LayoutDesigner.qml
         ../../ui/qml/SettingsPanel.qml
+        ../../ui/qml/EmptySlot.qml
+        ../../ui/qml/VideoOpenDialog.qml
+        ../../ui/qml/GridWorkspace.qml
+        ../../ui/qml/FileTreeView.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml

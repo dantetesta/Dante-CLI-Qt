@@ -21,6 +21,14 @@ class AppState : public QObject {
     Q_PROPERTY(QString terminalScheme      READ terminalScheme      WRITE setTerminalScheme      NOTIFY settingsChanged)
     Q_PROPERTY(QString fontName            READ fontName            WRITE setFontName            NOTIFY settingsChanged)
     Q_PROPERTY(int     fontSize            READ fontSize            WRITE setFontSize            NOTIFY settingsChanged)
+    Q_PROPERTY(QString shellOverride       READ shellOverride       WRITE setShellOverride       NOTIFY settingsChanged)
+    Q_PROPERTY(int     scrollback          READ scrollback          WRITE setScrollback          NOTIFY settingsChanged)
+    Q_PROPERTY(bool    restoreOnLaunch     READ restoreOnLaunch     WRITE setRestoreOnLaunch     NOTIFY settingsChanged)
+    Q_PROPERTY(QString voiceLanguage       READ voiceLanguage       WRITE setVoiceLanguage       NOTIFY settingsChanged)
+    Q_PROPERTY(QString voiceModel          READ voiceModel          WRITE setVoiceModel          NOTIFY settingsChanged)
+    Q_PROPERTY(bool    voiceAutoSubmit     READ voiceAutoSubmit     WRITE setVoiceAutoSubmit     NOTIFY settingsChanged)
+    Q_PROPERTY(int     appearanceMode      READ appearanceMode      WRITE setAppearanceMode      NOTIFY settingsChanged)
+    Q_PROPERTY(bool    autoCheckUpdates    READ autoCheckUpdates    WRITE setAutoCheckUpdates    NOTIFY settingsChanged)
 public:
     explicit AppState(QObject* parent = nullptr);
 
@@ -62,6 +70,22 @@ public:
     void setFontName(QString v);
     int fontSize() const { return settings_.fontSize; }
     void setFontSize(int v);
+    QString shellOverride() const { return settings_.shellOverride; }
+    void setShellOverride(QString v);
+    int scrollback() const { return settings_.scrollback; }
+    void setScrollback(int v);
+    bool restoreOnLaunch() const { return settings_.restoreOnLaunch; }
+    void setRestoreOnLaunch(bool v);
+    QString voiceLanguage() const { return settings_.voiceLanguage; }
+    void setVoiceLanguage(QString v);
+    QString voiceModel() const { return settings_.voiceModel; }
+    void setVoiceModel(QString v);
+    bool voiceAutoSubmit() const { return settings_.voiceAutoSubmit; }
+    void setVoiceAutoSubmit(bool v);
+    int appearanceMode() const { return int(settings_.appearance); }
+    void setAppearanceMode(int v);
+    bool autoCheckUpdates() const { return settings_.autoCheckUpdates; }
+    void setAutoCheckUpdates(bool v);
 
     int sidebarWidth() const { return settings_.sidebarWidth; }
     void setSidebarWidth(int v);
