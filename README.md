@@ -9,9 +9,9 @@ oficial em Swift (macOS) e do antigo MVP em Tauri.
 
 ## Download (instalador Windows x64)
 
-**Release atual:** [`v0.7.0-alpha.3`](https://github.com/dantetesta/Dante-CLI-Qt/releases/tag/v0.7.0-alpha.3) — 48 MB
+**Release atual:** [`v0.7.0-alpha.5`](https://github.com/dantetesta/Dante-CLI-Qt/releases/tag/v0.7.0-alpha.5) — 55 MB
 
-[**▶ Baixar Dante-CLI-Setup-0.7.0-x64.exe**](https://github.com/dantetesta/Dante-CLI-Qt/releases/download/v0.7.0-alpha.3/Dante-CLI-Setup-0.7.0-x64.exe)
+[**▶ Baixar Dante-CLI-Setup-0.7.0-x64.exe**](https://github.com/dantetesta/Dante-CLI-Qt/releases/download/v0.7.0-alpha.5/Dante-CLI-Setup-0.7.0-x64.exe)
 
 > Sem assinatura de código ainda — o SmartScreen do Windows vai pedir confirmação
 > ("Mais informações → Executar assim mesmo"). Resolver isso exige certificado
