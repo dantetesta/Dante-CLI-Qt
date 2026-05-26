@@ -156,6 +156,11 @@ ApplicationWindow {
         anchors.centerIn: parent
     }
 
+    // ───── Cheatsheet (Ctrl+/) — SPEC-140 ─────
+    CheatsheetView {
+        id: cheatsheet
+    }
+
     // Wire AI → terminal injection.
     Connections {
         target: ai
@@ -211,6 +216,11 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+A";       onActivated: ai.toggle() }
     // Command palette: Ctrl+K (Spotlight / VS Code Cmd+P style).
     Shortcut { sequence: "Ctrl+K";             onActivated: palette.toggle() }
+    // SPEC-140 — cheatsheet popup. Same chord as Swift sibling.
+    Shortcut {
+        sequences: ["Ctrl+/", "Ctrl+Shift+/", "F1"]
+        onActivated: cheatsheet.opened ? cheatsheet.close() : cheatsheet.open()
+    }
 
     // ─── Split-pane shortcuts ───────────────────────────────────────────
     // Vertical = side-by-side (Ctrl+\), horizontal = stacked (Ctrl+Shift+\).
