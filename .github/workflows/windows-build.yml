@@ -54,15 +54,24 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Re-run windeployqt (belt-and-suspenders)
-        shell: cmd
+        shell: pwsh
         # Even though CMake POST_BUILD already invokes windeployqt, we run it
-        # again here with explicit --dir so platforms/, imageformats/, styles/,
+        # again here with explicit --dir so platforms/, imageformats/, styles/
         # and the MSVC runtime files all land NEXT TO the .exe (some Qt
-        # versions resolve --dir from CWD when called via Ninja).
+        # versions resolve --dir from CWD when called via Ninja). pwsh avoids
+        # the cmd "trailing-backslash-eats-quote" issue.
         run: |
-          for /f "delims=" %%F in ('dir /s /b build\Dante CLI.exe') do set EXEDIR=%%~dpF
-          echo Deploying into "%EXEDIR%"
-          windeployqt --dir "%EXEDIR%" --release --compiler-runtime --qmldir ui\qml "%EXEDIR%Dante CLI.exe"
+          $exe = Get-ChildItem -Path build -Recurse -Filter "Dante CLI.exe" | Select-Object -First 1
+          if (-not $exe) { throw "Dante CLI.exe not found" }
+          $exeDir = $exe.DirectoryName
+          Write-Host "Deploying into $exeDir"
+          & windeployqt `
+              --dir $exeDir `
+              --release `
+              --compiler-runtime `
+              --qmldir "$env:GITHUB_WORKSPACE\ui\qml" `
+              "$($exe.FullName)"
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed with exit $LASTEXITCODE" }
 
       - name: Collect deploy folder
         shell: pwsh
