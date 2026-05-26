@@ -142,6 +142,20 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
+    // ───── Split-layout designer ─────
+    // Centered modal. Opened from the BottomToolbar ▦ button; emits
+    // `applied()` when the user clicks Aplicar.
+    LayoutDesigner {
+        id: layoutDesigner
+        anchors.centerIn: parent
+    }
+
+    // ───── Settings panel ─────
+    SettingsPanel {
+        id: settingsPanel
+        anchors.centerIn: parent
+    }
+
     // Wire AI → terminal injection.
     Connections {
         target: ai

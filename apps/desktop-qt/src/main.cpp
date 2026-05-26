@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.8");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.9");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already

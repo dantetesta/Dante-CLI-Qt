@@ -33,7 +33,7 @@ qt_add_executable(dante-cli WIN32
 foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  AIOverlay AIMessage SchemePicker
                  PaneView SplitContainer CommandPalette VoiceWidget
-                 UpdateBanner)
+                 UpdateBanner LayoutDesigner SettingsPanel)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -69,6 +69,8 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/CommandPalette.qml
         ../../ui/qml/VoiceWidget.qml
         ../../ui/qml/UpdateBanner.qml
+        ../../ui/qml/LayoutDesigner.qml
+        ../../ui/qml/SettingsPanel.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml
