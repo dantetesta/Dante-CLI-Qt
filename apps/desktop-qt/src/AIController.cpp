@@ -45,8 +45,10 @@ AIController::AIController(AppState* appState, QObject* parent)
     , groq_(new ai::GroqClient(this))
     , historyStore_(std::make_unique<persistence::JsonStore>(kHistoryFile, 400, this))
 {
-    connect(groq_, &ai::GroqClient::chatFinished, this, &AIController::onChatFinished);
-    connect(groq_, &ai::GroqClient::requestFailed, this, &AIController::onChatFailed);
+    connect(groq_, &ai::GroqClient::chatFinished,       this, &AIController::onChatFinished);
+    connect(groq_, &ai::GroqClient::chatChunk,          this, &AIController::onChatChunk);
+    connect(groq_, &ai::GroqClient::chatStreamFinished, this, &AIController::onChatStreamFinished);
+    connect(groq_, &ai::GroqClient::requestFailed,      this, &AIController::onChatFailed);
 
     if (appState_) {
         connect(appState_, &AppState::settingsChanged, this, &AIController::refreshApiKey);
@@ -88,7 +90,7 @@ void AIController::send(const QString& prompt) {
     inFlight_ = true;
     setLastError({});
     setStatus("thinking");
-    groq_->chat(pendingSystem_, trimmed);
+    groq_->chatStream(pendingSystem_, trimmed);
 }
 
 void AIController::explainCommand(const QString& cmd) {
@@ -108,7 +110,7 @@ void AIController::explainCommand(const QString& cmd) {
     inFlight_ = true;
     setLastError({});
     setStatus("thinking");
-    groq_->chat(pendingSystem_, trimmed);
+    groq_->chatStream(pendingSystem_, trimmed);
 }
 
 void AIController::suggestCommand(const QString& goal) {
@@ -128,7 +130,7 @@ void AIController::suggestCommand(const QString& goal) {
     inFlight_ = true;
     setLastError({});
     setStatus("thinking");
-    groq_->chat(pendingSystem_, trimmed);
+    groq_->chatStream(pendingSystem_, trimmed);
 }
 
 void AIController::insertIntoTerminal(const QString& text) {
@@ -139,9 +141,37 @@ void AIController::insertIntoTerminal(const QString& text) {
 /* ───────── private ───────── */
 
 void AIController::onChatFinished(const QString& content) {
+    // Non-streaming path (kept for chat() callers if anyone uses it directly).
     inFlight_ = false;
     appendMessage("assistant", content);
     setStatus("idle");
+}
+
+void AIController::onChatChunk(const QString& delta) {
+    // First chunk of a stream → create the assistant message; subsequent
+    // chunks → append to it in place and re-emit messagesChanged so QML
+    // ListView re-renders the same row with the new content.
+    if (!inFlight_) return;
+    if (messages_.isEmpty() || messages_.last().toMap().value("role").toString() != "assistant") {
+        QVariantMap m;
+        m.insert("role", "assistant");
+        m.insert("content", delta);
+        m.insert("timestamp", nowIsoUtc());
+        messages_.append(m);
+    } else {
+        auto m = messages_.last().toMap();
+        m["content"] = m.value("content").toString() + delta;
+        messages_[messages_.size() - 1] = m;
+    }
+    emit messagesChanged();
+    // Don't persist on every chunk — wait for stream finish.
+    setStatus("streaming");
+}
+
+void AIController::onChatStreamFinished() {
+    inFlight_ = false;
+    setStatus("idle");
+    persist();
 }
 
 void AIController::onChatFailed(const QString& reason) {

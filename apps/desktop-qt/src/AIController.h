@@ -71,6 +71,8 @@ signals:
 
 private slots:
     void onChatFinished(const QString& content);
+    void onChatChunk(const QString& delta);
+    void onChatStreamFinished();
     void onChatFailed(const QString& reason);
 
 private:

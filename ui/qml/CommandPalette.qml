@@ -33,11 +33,11 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "#000000"
-        opacity: palette.open ? 0.38 : 0.0
+        opacity: (palette && palette.open) ? 0.38 : 0.0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         MouseArea {
             anchors.fill: parent
-            enabled: palette.open
+            enabled: !!(palette && palette.open)
             onClicked: palette.hide()
         }
     }
@@ -104,7 +104,7 @@ Item {
                     font.family: Theme.fontSans
                     background: Rectangle { color: "transparent"; border.width: 0 }
                     selectByMouse: true
-                    text: palette.query
+                    text: palette && palette.query !== undefined ? palette.query : ""
 
                     onTextChanged: if (text !== palette.query) palette.setQuery(text)
 
@@ -122,6 +122,7 @@ Item {
 
                     Connections {
                         target: palette
+                        ignoreUnknownSignals: true
                         function onOpenChanged() {
                             if (palette.open) {
                                 queryField.text = ""
@@ -153,12 +154,13 @@ Item {
                     model: palette.results
                     spacing: 2
                     interactive: true
-                    currentIndex: palette.activeIndex
+                    currentIndex: palette && palette.activeIndex !== undefined ? palette.activeIndex : 0
 
                     onCountChanged: positionViewAtIndex(palette.activeIndex, ListView.Visible)
 
                     Connections {
                         target: palette
+                        ignoreUnknownSignals: true
                         function onActiveIndexChanged() {
                             results.positionViewAtIndex(palette.activeIndex, ListView.Contain)
                         }
@@ -281,7 +283,7 @@ Item {
     // Esc closes when the field doesn't have focus (e.g. clicked elsewhere).
     Shortcut {
         sequence: "Esc"
-        enabled: palette.open
+        enabled: !!(palette && palette.open)
         onActivated: palette.hide()
     }
 }

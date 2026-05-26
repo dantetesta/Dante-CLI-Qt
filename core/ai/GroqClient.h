@@ -19,9 +19,14 @@ public:
     void setChatModel(QString m)    { chatModel_ = std::move(m); }
     void setWhisperModel(QString m) { whisperModel_ = std::move(m); }
 
-    /// Single-turn chat completion. Emits `chatFinished` with the response
-    /// or `requestFailed` with the error.
+    /// Single-turn chat completion (non-streaming). Emits `chatFinished` with
+    /// the full response or `requestFailed` with the error.
     Q_INVOKABLE void chat(const QString& system, const QString& user);
+
+    /// Streaming chat completion. Emits `chatChunk(delta)` repeatedly as the
+    /// server flushes SSE events, then `chatStreamFinished()` once. On error
+    /// emits `requestFailed(reason)` and no chatStreamFinished.
+    Q_INVOKABLE void chatStream(const QString& system, const QString& user);
 
     /// Whisper transcription. Reads `audioPath` from disk and uploads as
     /// multipart/form-data.
@@ -29,6 +34,8 @@ public:
 
 signals:
     void chatFinished(const QString& content);
+    void chatChunk(const QString& delta);
+    void chatStreamFinished();
     void whisperFinished(const QString& text);
     void requestFailed(const QString& reason);
 

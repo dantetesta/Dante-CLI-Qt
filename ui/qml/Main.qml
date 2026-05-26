@@ -155,8 +155,11 @@ ApplicationWindow {
     }
 
     // Wire palette → terminal write requests (cd to favorite, snippet, etc.).
+    // ignoreUnknownSignals silences qmlcache warnings about not being able to
+    // resolve the signal types of a context-property target ahead of time.
     Connections {
         target: palette
+        ignoreUnknownSignals: true
         function onTerminalWriteRequested(sessionId, text) {
             terminal.write(sessionId, text)
         }

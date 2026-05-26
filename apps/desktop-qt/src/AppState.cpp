@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <algorithm>
 
 namespace dante {
 
@@ -17,6 +18,7 @@ namespace {
             {"sessionId", t.sessionId},
             {"splitMode", t.splitMode},
             {"secondSessionId", t.secondSessionId},
+            {"splitFraction", t.splitFraction},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -31,6 +33,7 @@ namespace {
         t.sessionId = o.value("sessionId").toString();
         t.splitMode = o.value("splitMode").toString();
         t.secondSessionId = o.value("secondSessionId").toString();
+        t.splitFraction = o.value("splitFraction").toDouble(0.5);
         return t;
     }
 }
@@ -189,6 +192,20 @@ QString AppState::tabPrimarySessionId(const QString& tabId) const {
 QString AppState::tabSecondSessionId(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);
     return i < 0 ? QString() : tabs_[i].secondSessionId;
+}
+
+double AppState::tabSplitFraction(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? 0.5 : tabs_[i].splitFraction;
+}
+
+void AppState::setTabSplitFraction(const QString& tabId, double f) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    f = std::clamp(f, 0.05, 0.95);
+    if (qFuzzyCompare(tabs_[i].splitFraction, f)) return;
+    tabs_[i].splitFraction = f;
+    persistSession();
 }
 
 void AppState::splitActive(const QString& direction) {

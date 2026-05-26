@@ -34,16 +34,23 @@ Item {
     property string focusedSide: "a"      // "a" | "b"
 
     // Drag-resizable split fraction (a's share of the available extent).
-    // Starts at 0.5 every time the split is created.
-    property real splitFraction: 0.5
+    // Hydrated from persisted appState on mount; saved back when the user
+    // releases the divider drag (see MouseArea.onReleased below).
+    property real splitFraction: appState.tabSplitFraction(root.tabId)
+
+    Component.onCompleted: {
+        splitFraction = appState.tabSplitFraction(root.tabId)
+    }
 
     Connections {
         target: appState
+        ignoreUnknownSignals: true
         function onTabSplitChanged(changedId) {
             if (changedId !== root.tabId) return
             root._bump += 1
-            // Reset to balanced split on every layout change.
-            root.splitFraction = 0.5
+            // Re-read the persisted fraction (lets a newly-created split start
+            // at the last known value for this tab, or 0.5 if never split).
+            root.splitFraction = appState.tabSplitFraction(root.tabId)
             // If the previously-focused side disappeared, snap back to "a".
             if (!root.isSplit) root.focusedSide = "a"
         }
@@ -156,6 +163,10 @@ Item {
                     if (total <= 0) return
                     const delta = (cur - anchorPos) / total
                     root.splitFraction = Math.max(0.1, Math.min(0.9, anchorFraction + delta))
+                }
+                onReleased: {
+                    // Persist only on release — avoids 60 fps writes during drag.
+                    appState.setTabSplitFraction(root.tabId, root.splitFraction)
                 }
             }
         }

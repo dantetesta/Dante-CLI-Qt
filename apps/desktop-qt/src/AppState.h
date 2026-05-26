@@ -47,6 +47,11 @@ public:
     /// Close one side of the split on the active tab. `side` ∈ {"a","b"}.
     /// If "a" is closed, the b-session becomes the sole pane (re-keyed).
     Q_INVOKABLE void closeActivePane(const QString& side);
+    /// Current split-fraction (0..1) for the given tab. Default 0.5.
+    Q_INVOKABLE double tabSplitFraction(const QString& tabId) const;
+    /// Persist a new split fraction. Clamped to [0.05, 0.95] to avoid
+    /// collapsing a pane to invisibility from a frantic drag.
+    Q_INVOKABLE void setTabSplitFraction(const QString& tabId, double f);
 
     /* ─── Settings ─── */
     QString groqApiKey() const { return settings_.groqApiKey; }

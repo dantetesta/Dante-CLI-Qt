@@ -47,6 +47,7 @@ struct Tab {
     // Second pane uses `secondSessionId` (UUID-stable as `id + ":b"`).
     QString splitMode;
     QString secondSessionId;
+    double  splitFraction{0.5};   // 0..1 — first pane's share (left if vertical, top if horizontal)
 };
 
 // -----------------------------------------------------------------------------
