@@ -62,13 +62,17 @@ Popup {
             spacing: 0
 
             /* ─── Drag header ─── */
+            // topLeftRadius / topRightRadius would be the obvious way to
+            // round only the top corners, but those properties only exist
+            // from QtQuick 6.7+ (we pin 6.5 across the codebase). The
+            // popup's background Rectangle already rounds all 4 corners,
+            // and the header is clipped by the body Layout, so visually
+            // the top corners look rounded anyway.
             Rectangle {
                 id: header
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
                 color: Theme.surface
-                topLeftRadius: Theme.radiusLg
-                topRightRadius: Theme.radiusLg
 
                 Rectangle {
                     anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
