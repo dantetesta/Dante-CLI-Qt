@@ -33,7 +33,7 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2019_64
-          modules: qtshadertools
+          modules: qtshadertools qtmultimedia
           cache: true
           setup-python: false
 
