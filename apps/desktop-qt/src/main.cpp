@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.34");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.35");
     // SPEC-022 — QtWebEngine must initialize BEFORE QApplication so Chromium
     // can install its argv hooks and GPU/IPC plumbing on the main thread.
     QtWebEngineQuick::initialize();

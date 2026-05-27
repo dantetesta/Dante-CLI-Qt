@@ -22,7 +22,7 @@ deve fechar pelo menos um gap e referenciá-lo na mensagem.
 | `Services/TerminalSessionRegistry` + SwiftTerm | `core/terminal/TerminalSession` + `TerminalBuffer` + `VTParser` + `apps/.../TerminalView` | ✅ — mouse modes 1000/1002/1003/1006 fechados (SPEC-031, alpha.22) |
 | `Services/GroqChatClient` + `GroqWhisperClient` | `core/ai/GroqClient` (chat + chatStream SSE + whisper multipart) | ✅ |
 | `Services/AIProviderStore` | `core/ai/AIProviderStore` + `AIProvidersModel` (SPEC-040, alpha.29) | ✅ — roteamento via baseUrl pendente em GroqClient |
-| `Services/BrowserSessionRegistry` (WKWebView) | ❌ **falta WebEngine integration** (SPEC-022) | ❌ |
+| `Services/BrowserSessionRegistry` (WKWebView) | `ui/qml/BrowserView.qml` + QtWebEngineQuick (SPEC-022, alpha.33) | ✅ — +150 MB no installer Windows |
 | `Services/FileBrowserService` + `GitStatusService` | `apps/.../FileTreeController` + `GitStatusProvider` (SPEC-051, alpha.28) | ✅ — UI badges em FileTreeView são polish follow-up |
 | `Services/ProcessStats` (CPU/RAM) | `core/system/ProcessStats` + `ProcessStatsController` (SPEC-060, alpha.26) | ✅ |
 | `Services/ClaudeResourceScanner` + Right Sidebar | `core/claude/ClaudeResourceScanner` + `ResourcesController` + RightSidebar QMLs (SPEC-070, alpha.30) | ✅ |
@@ -55,9 +55,9 @@ deve fechar pelo menos um gap e referenciá-lo na mensagem.
 | `Command Palette ⌘K` (não existe no Swift) | `PaletteController` + `CommandPalette.qml` | ✅ (extra nosso) |
 | Tray icon (não existe no Swift) | `TrayController` | ✅ (extra nosso) |
 | `AppState+LayoutTemplates` | `LayoutTemplatesController` | ✅ |
-| **Áudio nativo** — `AVAudioRecorder` (macOS) | `MacVoiceCapture` (stub 23 LOC) + fallback `QtVoiceCapture` | 🟡 — fallback funciona, nativo faltando (SPEC-150) |
-| **Áudio nativo** — WASAPI (Windows) | `WasapiVoiceCapture` (stub 35 LOC) + fallback `QtVoiceCapture` | 🟡 — fallback funciona, nativo faltando (SPEC-151) |
-| Localização PT-BR + EN fallback | strings hardcoded PT-BR/EN; sem `tr()` consistente | 🟡 (SPEC-160) |
+| **Áudio nativo** — `AVAudioRecorder` (macOS) | `MacVoiceCapture` Obj-C++ com AVAudioEngine + AVAudioConverter (SPEC-150, alpha.34) | ✅ |
+| **Áudio nativo** — WASAPI (Windows) | `WasapiVoiceCapture` shared-mode capture com event-driven loop (SPEC-151, alpha.34) | ✅ |
+| Localização PT-BR + EN fallback | `core/i18n/Translator` + qt_add_translations + 272 messages × 30 contexts (SPEC-160, alpha.34) | ✅ |
 
 **Legenda**: ✅ feature-complete · 🟡 stub / parcial · ❌ não existe.
 
@@ -183,6 +183,12 @@ Foco em fechar P0 antes de tocar P1.
 12. ✅ SPEC-040 — AI Providers backend + Settings tab (alpha.29)
 13. ✅ SPEC-070 — Right Sidebar Skills/Agents/MCPs + ClaudeResourceScanner (alpha.30)
 14. ✅ SPEC-080 + SPEC-081 — AutoFill engine + Generators registry (36 generators) (alpha.31)
+
+### Fase C — "features grandes + polish" (alpha.33 → alpha.34) — ✅ TUDO FECHADO
+15. ✅ SPEC-022 — Browser pane (QtWebEngine) — +150 MB no installer Windows (alpha.33)
+16. ✅ SPEC-150 + SPEC-151 — Native audio capture (AVFoundation macOS + WASAPI Windows) (alpha.34)
+17. ✅ SPEC-160 — i18n cross-cutting (272 msgs PT-BR + EN, runtime switch) (alpha.34)
+18. ✅ SPEC-170 + SPEC-171 + SPEC-172 — Drag tab→slot + Popup unification + Calculator PiP (alpha.34)
 
 ### Fase B — "paridade visível" (alpha.24 → alpha.32)
 8. SPEC-090 + 091–098 — todos os atalhos (alpha.24)
