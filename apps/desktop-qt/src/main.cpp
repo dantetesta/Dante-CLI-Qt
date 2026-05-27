@@ -20,6 +20,7 @@
 #include "TrayController.h"
 #include "LayoutTemplatesController.h"
 #include "FileTreeController.h"
+#include "GitStatusProvider.h"
 #include "ProcessStatsController.h"
 #include "CalculatorController.h"
 
@@ -44,7 +45,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.27");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.28");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -76,6 +77,8 @@ int main(int argc, char* argv[]) {
     auto* updater    = new dante::UpdateController(&app);
     auto* templates  = new dante::LayoutTemplatesController(&app);
     auto* fileTree   = new dante::FileTreeController(&app);
+    auto* gitStatus  = new dante::GitStatusProvider(&app);
+    fileTree->setGitProvider(gitStatus);
     auto* processStats = new dante::ProcessStatsController(&app);
     auto* calculator = new dante::CalculatorController(&app);
     calculator->hydrate();
@@ -135,6 +138,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("updater",    updater);
     engine.rootContext()->setContextProperty("templates",  templates);
     engine.rootContext()->setContextProperty("fileTree",   fileTree);
+    engine.rootContext()->setContextProperty("gitStatus",  gitStatus);
     engine.rootContext()->setContextProperty("processStats", processStats);
     engine.rootContext()->setContextProperty("calculator", calculator);
 

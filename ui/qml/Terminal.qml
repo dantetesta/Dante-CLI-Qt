@@ -30,16 +30,17 @@ Rectangle {
     property int _bump: 0
     readonly property int  kind: (_bump, appState.tabKind(appState.activeTabId))
     readonly property bool useEditor: kind === 1
+    readonly property bool useVideo:  kind === 3 // TabKind::Video
     readonly property bool useCalculator: (_bump,
         appState.tabKindString(appState.activeTabId) === "calculator")
-    readonly property bool useTree: !useEditor && !useCalculator
+    readonly property bool useTree: !useEditor && !useVideo && !useCalculator
         && (_bump, !appState.tabPaneTree(appState.activeTabId).leaf
                   && !appState.tabPaneTree(appState.activeTabId).split
                   ? false : true)
-    readonly property bool useGrid: !useEditor && !useTree && !useCalculator
+    readonly property bool useGrid: !useEditor && !useVideo && !useTree && !useCalculator
         && (_bump, appState.tabGridCols(appState.activeTabId) > 0
                   && appState.tabGridRows(appState.activeTabId) > 0)
-    readonly property bool useSplit: !useEditor && !useTree && !useGrid && !useCalculator
+    readonly property bool useSplit: !useEditor && !useVideo && !useTree && !useGrid && !useCalculator
 
     Connections {
         target: appState
@@ -85,6 +86,13 @@ Rectangle {
         anchors.fill: parent
         active: root.useCalculator
         sourceComponent: CalculatorView {}
+    }
+
+    Loader {
+        id: videoLoader
+        anchors.fill: parent
+        active: root.useVideo
+        sourceComponent: VideoView {}
     }
 
     // SPEC-110 — recursive pane tree.

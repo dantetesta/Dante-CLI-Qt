@@ -156,6 +156,7 @@ namespace {
             {"editorLanguage", t.editorLanguage},
             {"editorDirty", t.editorDirty},
             {"paneTree", paneTreeToJson(t.paneTree)},
+            {"videoPath", t.videoPath},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -178,6 +179,7 @@ namespace {
         t.editorLanguage = o.value("editorLanguage").toString();
         t.editorDirty = o.value("editorDirty").toBool();
         t.paneTree = paneTreeFromJson(o.value("paneTree"));
+        t.videoPath = o.value("videoPath").toString();
         return t;
     }
 }
@@ -456,6 +458,34 @@ QString AppState::tabKindString(const QString& tabId) const {
         case TabKind::Calculator: return QStringLiteral("calculator");
     }
     return QStringLiteral("terminal");
+}
+QString AppState::newVideoTab(const QString& title, const QString& path) {
+    Tab t;
+    t.id        = newId();
+    t.kind      = TabKind::Video;
+    t.title     = title.isEmpty() ? QStringLiteral("Vídeo") : title;
+    t.emoji     = QStringLiteral("🎬");
+    t.color     = QStringLiteral("#7C82FF");
+    t.videoPath = path;
+    tabs_.append(t);
+    activeTabId_ = t.id;
+    emit tabsChanged();
+    emit activeTabIdChanged();
+    persistSession();
+    return t.id;
+}
+QString AppState::tabVideoPath(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].videoPath;
+}
+void AppState::setTabVideoPath(const QString& tabId, const QString& path) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+    if (t.videoPath == path) return;
+    t.videoPath = path;
+    emit tabsChanged();
+    persistSession();
 }
 QString AppState::openCalculatorTab() {
     for (const auto& t : tabs_) {

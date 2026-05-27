@@ -75,6 +75,11 @@ public:
     Q_INVOKABLE QString tabKindString(const QString& tabId) const;
     Q_INVOKABLE QString openCalculatorTab();
 
+    /* ─── SPEC-023 — Video tab kind ─── */
+    Q_INVOKABLE QString newVideoTab(const QString& title, const QString& path);
+    Q_INVOKABLE QString tabVideoPath(const QString& tabId) const;
+    Q_INVOKABLE void    setTabVideoPath(const QString& tabId, const QString& path);
+
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".
     Q_INVOKABLE QString tabSplitMode(const QString& tabId) const;

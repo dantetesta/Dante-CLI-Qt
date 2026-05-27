@@ -16,13 +16,22 @@
 
 namespace dante {
 
+class GitStatusProvider;
+
 class FileTreeController : public QObject {
     Q_OBJECT
     Q_PROPERTY(QFileSystemModel* model      READ model       CONSTANT)
     Q_PROPERTY(QString           rootPath   READ rootPath    WRITE setRootPath   NOTIFY rootChanged)
     Q_PROPERTY(bool              showHidden READ showHidden  WRITE setShowHidden NOTIFY showHiddenChanged)
+    Q_PROPERTY(QString           gitBranch  READ gitBranch                       NOTIFY gitBranchChanged)
 public:
     explicit FileTreeController(QObject* parent = nullptr);
+
+    /// SPEC-051 — inject a shared provider. Called from main.cpp after both
+    /// objects exist so the constructor signature stays additive.
+    void setGitProvider(GitStatusProvider* git);
+    QString gitBranch() const { return cachedBranch_; }
+    Q_INVOKABLE QString gitStatusFor(const QString& absolutePath) const;
 
     QFileSystemModel* model() const { return const_cast<QFileSystemModel*>(&model_); }
 
@@ -64,12 +73,15 @@ signals:
     void rootChanged();
     void showHiddenChanged();
     void operationFailed(const QString& reason);
+    void gitBranchChanged();
 
 private:
     void applyFilter();
 
-    QFileSystemModel model_;
-    bool             showHidden_{false};
+    QFileSystemModel    model_;
+    bool                showHidden_{false};
+    GitStatusProvider*  git_{nullptr};
+    QString             cachedBranch_;
 };
 
 } // namespace dante

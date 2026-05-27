@@ -62,6 +62,9 @@ struct Tab {
     QString editorLanguage;   // detected/forced language id ("md","json","py",…)
     bool    editorDirty{false};
 
+    // SPEC-023 — Video tab content. Only meaningful when kind == Video.
+    QString videoPath;       // absolute path or file:// url
+
     // SPEC-110 — recursive pane tree (replaces splitMode/secondSessionId for
     // N>2 panes). Empty → single pane (Tab.sessionId). When non-empty the
     // SplitContainer.qml renders RecursiveSplit. Shape:

@@ -1,4 +1,5 @@
 #include "FileTreeController.h"
+#include "GitStatusProvider.h"
 
 #include <QClipboard>
 #include <QDesktopServices>
@@ -79,7 +80,33 @@ QString FileTreeController::rootPath() const {
 void FileTreeController::setRootPath(const QString& path) {
     if (path == model_.rootPath()) return;
     model_.setRootPath(path);
+    if (git_) {
+        cachedBranch_ = git_->branchName(path);
+        emit gitBranchChanged();
+    }
     emit rootChanged();
+}
+
+void FileTreeController::setGitProvider(GitStatusProvider* git) {
+    git_ = git;
+    if (!git_) return;
+    connect(git_, &GitStatusProvider::statusUpdated, this,
+            [this](const QString&) { emit rootChanged(); });
+    connect(git_, &GitStatusProvider::branchUpdated, this,
+            [this](const QString&, const QString& branch) {
+                cachedBranch_ = branch;
+                emit gitBranchChanged();
+            });
+    connect(&model_, &QFileSystemModel::directoryLoaded, this,
+            [this](const QString& dir) { if (git_) git_->invalidate(dir); });
+    // Seed branch for the current rootPath so the chip shows immediately.
+    cachedBranch_ = git_->branchName(model_.rootPath());
+    emit gitBranchChanged();
+}
+
+QString FileTreeController::gitStatusFor(const QString& absolutePath) const {
+    if (!git_) return {};
+    return git_->statusForFile(absolutePath);
 }
 
 QModelIndex FileTreeController::rootIndex() const {

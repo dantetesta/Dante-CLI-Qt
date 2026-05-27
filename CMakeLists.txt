@@ -32,7 +32,8 @@ set(CMAKE_AUTOUIC ON)
 # Qt modules used. Quick = QML runtime; Network = HTTP; Sql = SQLite;
 # Concurrent = threaded persistence; Widgets only for menu bar/tray.
 find_package(Qt6 6.5 REQUIRED COMPONENTS
-    Core Gui Qml Quick QuickControls2 Network Sql Concurrent Widgets Multimedia
+    Core Gui Qml Quick QuickControls2 Network Sql Concurrent Widgets
+    Multimedia MultimediaWidgets
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
