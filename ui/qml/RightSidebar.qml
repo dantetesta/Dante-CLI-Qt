@@ -164,7 +164,8 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 20
             color: Theme.surfaceLow
-            visible: resources && resources.scanning
+            visible: (typeof resources !== "undefined" && resources)
+                     ? (resources.scanning === true) : false
             Text {
                 anchors.centerIn: parent
                 text: qsTr("Lendo ~/.claude/…")

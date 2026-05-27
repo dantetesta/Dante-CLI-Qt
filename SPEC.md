@@ -19,17 +19,17 @@ deve fechar pelo menos um gap e referenciá-lo na mensagem.
 | `AppState` (`@MainActor` singleton, Combine `@Published`) | `dante::AppState : QObject` com `Q_PROPERTY` + sinais | ✅ |
 | `Models/*.swift` (POD Codable) | `core/domain/Models.h` (structs) + `*Model.h/cpp` (`QAbstractListModel`) | ✅ parcial — faltam modelos para Editor/Browser/Video/Calculator (ver SPEC-021..024) |
 | `Services/*Store.swift` (JSONEncoder, debounce 300 ms) | `core/persistence/JsonStore` (`QSaveFile` atomic, debounce QTimer 300–500 ms) | ✅ |
-| `Services/TerminalSessionRegistry` + SwiftTerm | `core/terminal/TerminalSession` + `TerminalBuffer` + `VTParser` + `apps/.../TerminalView` | ✅ MVP — mouse modes 1000/1002/1003/1006 ainda TODO em `VTParser.cpp:265` (SPEC-031) |
+| `Services/TerminalSessionRegistry` + SwiftTerm | `core/terminal/TerminalSession` + `TerminalBuffer` + `VTParser` + `apps/.../TerminalView` | ✅ — mouse modes 1000/1002/1003/1006 fechados (SPEC-031, alpha.22) |
 | `Services/GroqChatClient` + `GroqWhisperClient` | `core/ai/GroqClient` (chat + chatStream SSE + whisper multipart) | ✅ |
-| `Services/AIProviderStore` | `apps/.../AIController` + ❌ **falta backend de Providers** (SPEC-040) | 🟡 |
-| `Services/BrowserSessionRegistry` (WKWebView) | ❌ **falta WebEngine integration** (SPEC-050) | ❌ |
-| `Services/FileBrowserService` + `GitStatusService` | `apps/.../FileTreeController` (QFileSystemModel) + ❌ git status (SPEC-051) | 🟡 |
-| `Services/ProcessStats` (CPU/RAM) | ❌ **falta ProcessStatsController** (SPEC-060) | ❌ |
-| `Services/ClaudeResourceScanner` + Right Sidebar | ❌ **falta `~/.claude/` scanner + Skills/Agents/MCPs panel** (SPEC-070, 071) | ❌ |
-| `Services/AutoFillService` (681 LOC, `$VAR`, `$(…)`) | ❌ **falta AutoFill engine** (SPEC-080) | ❌ |
-| `Services/Generators` (templates de comando) | ❌ **falta Generators registry** (SPEC-081) | ❌ |
+| `Services/AIProviderStore` | `core/ai/AIProviderStore` + `AIProvidersModel` (SPEC-040, alpha.29) | ✅ — roteamento via baseUrl pendente em GroqClient |
+| `Services/BrowserSessionRegistry` (WKWebView) | ❌ **falta WebEngine integration** (SPEC-022) | ❌ |
+| `Services/FileBrowserService` + `GitStatusService` | `apps/.../FileTreeController` + `GitStatusProvider` (SPEC-051, alpha.28) | ✅ — UI badges em FileTreeView são polish follow-up |
+| `Services/ProcessStats` (CPU/RAM) | `core/system/ProcessStats` + `ProcessStatsController` (SPEC-060, alpha.26) | ✅ |
+| `Services/ClaudeResourceScanner` + Right Sidebar | `core/claude/ClaudeResourceScanner` + `ResourcesController` + RightSidebar QMLs (SPEC-070, alpha.30) | ✅ |
+| `Services/AutoFillService` (681 LOC, `$VAR`, `$(…)`) | `core/autofill/AutoFillEngine` + `AutoFillController` + `AutoFillDialog.qml` (SPEC-080, alpha.31) | ✅ |
+| `Services/Generators` (templates de comando) | `core/generators/GeneratorsRegistry` + `GeneratorsModel` + `GeneratorsPalette.qml` — 36 generators (SPEC-081, alpha.31) | ✅ |
 | `Services/UpdateChecker` + `InstallCleanup` | `core/update/UpdateChecker` + `apps/.../UpdateController` + Inno `/SILENT` | ✅ |
-| `Services/CalculatorEngine` + `CalculatorPiPManager` | ❌ **falta Calculator pane + engine** (SPEC-024) | ❌ |
+| `Services/CalculatorEngine` + `CalculatorPiPManager` | `core/calculator/CalculatorEngine` + `CalculatorController` + `CalculatorView.qml` (SPEC-024, alpha.27); PiP é SPEC-172 | ✅ — pane ok, PiP pendente |
 | `Utilities/AppCommands` (atalhos) | atalhos hardcoded em `Main.qml` + `PaletteController` | 🟡 — faltam ~10 atalhos (SPEC-090) |
 | `Utilities/TerminalThemes` (43 schemes) | `core/themes/ThemeRegistry` (11 schemes) | 🟡 — **32 schemes faltando** (SPEC-100) |
 | `Views/RootView` | `ui/qml/Main.qml` | ✅ |
@@ -175,6 +175,14 @@ Foco em fechar P0 antes de tocar P1.
 6. ✅ SPEC-130 — EmojiPicker completo (~700 emojis, 13 cats, recents) (alpha.23, commit cb57e45)
 7. ✅ SPEC-021 — Editor pane (sem syntax highlight ainda) (alpha.24, commit 6b2d9b6)
 8. ✅ SPEC-110 — PaneNode recursivo (N panes), `RecursiveSplit.qml` via `Loader { source }` (alpha.25)
+
+### Fase B — "paridade visível" (alpha.26 → alpha.31) — ✅ TUDO FECHADO
+9. ✅ SPEC-060 — Process stats (CPU/RAM real-time) (alpha.26)
+10. ✅ SPEC-024 — Calculator pane + engine PEMDAS + history (alpha.27)
+11. ✅ SPEC-023 + SPEC-051 — Video pane (QtMultimedia) + Git status provider (alpha.28)
+12. ✅ SPEC-040 — AI Providers backend + Settings tab (alpha.29)
+13. ✅ SPEC-070 — Right Sidebar Skills/Agents/MCPs + ClaudeResourceScanner (alpha.30)
+14. ✅ SPEC-080 + SPEC-081 — AutoFill engine + Generators registry (36 generators) (alpha.31)
 
 ### Fase B — "paridade visível" (alpha.24 → alpha.32)
 8. SPEC-090 + 091–098 — todos os atalhos (alpha.24)
