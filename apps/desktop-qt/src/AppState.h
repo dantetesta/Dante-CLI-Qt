@@ -80,6 +80,11 @@ public:
     Q_INVOKABLE QString tabVideoPath(const QString& tabId) const;
     Q_INVOKABLE void    setTabVideoPath(const QString& tabId, const QString& path);
 
+    /* ─── SPEC-022 — Browser tab kind ─── */
+    Q_INVOKABLE QString newBrowserTab(const QString& title, const QString& url);
+    Q_INVOKABLE QString tabBrowserUrl(const QString& tabId) const;
+    Q_INVOKABLE void    setTabBrowserUrl(const QString& tabId, const QString& url);
+
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".
     Q_INVOKABLE QString tabSplitMode(const QString& tabId) const;

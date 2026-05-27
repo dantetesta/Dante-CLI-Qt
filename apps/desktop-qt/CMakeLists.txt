@@ -56,7 +56,7 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  MovablePopup CheatsheetView AboutView EditorView
                  RecursiveSplit CalculatorView VideoView AIProvidersTab
                  RightSidebar SkillsTab AgentsTab MCPsTab ResourceRow
-                 AutoFillDialog GeneratorsPalette)
+                 AutoFillDialog GeneratorsPalette BrowserView)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -115,6 +115,7 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/ResourceRow.qml
         ../../ui/qml/AutoFillDialog.qml
         ../../ui/qml/GeneratorsPalette.qml
+        ../../ui/qml/BrowserView.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml
@@ -126,6 +127,7 @@ target_link_libraries(dante-cli PRIVATE
     dante-infra
     Qt6::Quick Qt6::QuickControls2 Qt6::Widgets
     Qt6::Multimedia
+    Qt6::WebEngineQuick
 )
 
 set_target_properties(dante-cli PROPERTIES

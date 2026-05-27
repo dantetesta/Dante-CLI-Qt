@@ -31,6 +31,7 @@
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
 
+#include <QtWebEngineQuick>
 #include <QApplication>
 #include <QMessageBox>
 #include <QQmlApplicationEngine>
@@ -49,7 +50,10 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.32");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.33");
+    // SPEC-022 — QtWebEngine must initialize BEFORE QApplication so Chromium
+    // can install its argv hooks and GPU/IPC plumbing on the main thread.
+    QtWebEngineQuick::initialize();
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already

@@ -157,6 +157,7 @@ namespace {
             {"editorDirty", t.editorDirty},
             {"paneTree", paneTreeToJson(t.paneTree)},
             {"videoPath", t.videoPath},
+            {"browserUrl", t.browserUrl},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -180,6 +181,7 @@ namespace {
         t.editorDirty = o.value("editorDirty").toBool();
         t.paneTree = paneTreeFromJson(o.value("paneTree"));
         t.videoPath = o.value("videoPath").toString();
+        t.browserUrl = o.value("browserUrl").toString();
         return t;
     }
 }
@@ -473,6 +475,34 @@ QString AppState::newVideoTab(const QString& title, const QString& path) {
     emit activeTabIdChanged();
     persistSession();
     return t.id;
+}
+QString AppState::newBrowserTab(const QString& title, const QString& url) {
+    Tab t;
+    t.id         = newId();
+    t.kind       = TabKind::Browser;
+    t.title      = title.isEmpty() ? QStringLiteral("Navegador") : title;
+    t.emoji      = QStringLiteral("🌐");
+    t.color      = QStringLiteral("#7C82FF");
+    t.browserUrl = url;
+    tabs_.append(t);
+    activeTabId_ = t.id;
+    emit tabsChanged();
+    emit activeTabIdChanged();
+    persistSession();
+    return t.id;
+}
+QString AppState::tabBrowserUrl(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].browserUrl;
+}
+void AppState::setTabBrowserUrl(const QString& tabId, const QString& url) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return;
+    Tab& t = tabs_[i];
+    if (t.browserUrl == url) return;
+    t.browserUrl = url;
+    emit tabsChanged();
+    persistSession();
 }
 QString AppState::tabVideoPath(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);

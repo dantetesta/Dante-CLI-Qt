@@ -65,6 +65,9 @@ struct Tab {
     // SPEC-023 — Video tab content. Only meaningful when kind == Video.
     QString videoPath;       // absolute path or file:// url
 
+    // SPEC-022 — Browser tab content. Only meaningful when kind == Browser.
+    QString browserUrl;      // empty = blank tab; otherwise full URL
+
     // SPEC-110 — recursive pane tree (replaces splitMode/secondSessionId for
     // N>2 panes). Empty → single pane (Tab.sessionId). When non-empty the
     // SplitContainer.qml renders RecursiveSplit. Shape:

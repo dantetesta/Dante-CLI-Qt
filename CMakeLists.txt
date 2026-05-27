@@ -34,6 +34,7 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core Gui Qml Quick QuickControls2 Network Sql Concurrent Widgets
     Multimedia MultimediaWidgets
+    WebEngineQuick
 )
 
 qt_standard_project_setup(REQUIRES 6.5)

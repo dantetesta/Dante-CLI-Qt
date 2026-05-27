@@ -29,18 +29,19 @@ Rectangle {
 
     property int _bump: 0
     readonly property int  kind: (_bump, appState.tabKind(appState.activeTabId))
-    readonly property bool useEditor: kind === 1
-    readonly property bool useVideo:  kind === 3 // TabKind::Video
+    readonly property bool useEditor:  kind === 1
+    readonly property bool useVideo:   kind === 3 // TabKind::Video
+    readonly property bool useBrowser: kind === 4 // TabKind::Browser
     readonly property bool useCalculator: (_bump,
         appState.tabKindString(appState.activeTabId) === "calculator")
-    readonly property bool useTree: !useEditor && !useVideo && !useCalculator
+    readonly property bool useTree: !useEditor && !useVideo && !useBrowser && !useCalculator
         && (_bump, !appState.tabPaneTree(appState.activeTabId).leaf
                   && !appState.tabPaneTree(appState.activeTabId).split
                   ? false : true)
-    readonly property bool useGrid: !useEditor && !useVideo && !useTree && !useCalculator
+    readonly property bool useGrid: !useEditor && !useVideo && !useBrowser && !useTree && !useCalculator
         && (_bump, appState.tabGridCols(appState.activeTabId) > 0
                   && appState.tabGridRows(appState.activeTabId) > 0)
-    readonly property bool useSplit: !useEditor && !useVideo && !useTree && !useGrid && !useCalculator
+    readonly property bool useSplit: !useEditor && !useVideo && !useBrowser && !useTree && !useGrid && !useCalculator
 
     Connections {
         target: appState
@@ -93,6 +94,13 @@ Rectangle {
         anchors.fill: parent
         active: root.useVideo
         sourceComponent: VideoView {}
+    }
+
+    Loader {
+        id: browserLoader
+        anchors.fill: parent
+        active: root.useBrowser
+        sourceComponent: BrowserView {}
     }
 
     // SPEC-110 — recursive pane tree.
