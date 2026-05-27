@@ -5,9 +5,11 @@
 // GridWorkspace slots.
 //
 // The header has a path breadcrumb + ⟲ refresh + ↑ go-up + 📁+ new-folder.
-import QtQuick 6.5
-import QtQuick.Controls 6.5
-import QtQuick.Layouts 6.5
+// TreeView.rootIndex (used at line ~130) was added in QtQuick.Controls 6.7,
+// so this file bumps to 6.7 explicitly. The installer ships Qt 6.7.2.
+import QtQuick 6.7
+import QtQuick.Controls 6.7
+import QtQuick.Layouts 6.7
 import "."
 // Qt.labs.platform was imported here but never used; it was breaking on
 // Windows in Qt 6.7 where the QML module isn't deployed by default.
