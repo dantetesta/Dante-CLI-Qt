@@ -1,13 +1,10 @@
 #include "CalculatorEngine.h"
 
-// MSVC's <cmath> hides M_PI / M_E unless _USE_MATH_DEFINES is set before any
-// math header. Define it here so the constants table resolves on Windows;
-// harmless on Clang/libc++ where the macros exist unconditionally.
-#define _USE_MATH_DEFINES
 #include <QStringView>
 #include <cmath>
 #include <cctype>
 #include <limits>
+#include <numbers>  // C++20 std::numbers::pi / e — portable across MSVC + Clang
 
 namespace dante::calculator {
 
@@ -156,8 +153,8 @@ private:
             const QString name = s_.mid(start, pos_ - start).toLower();
 
             // Constants take precedence over zero-arg functions.
-            if (name == QStringLiteral("pi"))  return M_PI;
-            if (name == QStringLiteral("e"))   return M_E;
+            if (name == QStringLiteral("pi"))  return std::numbers::pi;
+            if (name == QStringLiteral("e"))   return std::numbers::e;
 
             skipWs();
             if (!match(QLatin1Char('('))) {
