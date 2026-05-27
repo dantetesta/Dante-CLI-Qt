@@ -13,8 +13,18 @@ import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
 import "."
 
-Popup {
+// SPEC-171: standardized on MovablePopup so the user can drag/resize the
+// designer like every other modal (Cheatsheet, About, AutoFill). Public
+// QML API is preserved — Main.qml still calls layoutDesigner.open()/close()
+// and reads .opened.
+MovablePopup {
     id: root
+    title: qsTr("Visão Dividida")
+    icon: "▦"
+    width: 720
+    height: 720
+    minWidth: 560
+    minHeight: 520
 
     /* ─── Edit state ──────────────────────────────────────────────────── */
     property int  cols: 2
@@ -65,21 +75,6 @@ Popup {
         for (const k in rn) if (rn[k] === "tabId") return parseInt(k)
         return 0
     }
-
-    /* ─── Look ─── */
-    modal: true
-    focus: true
-    width: 720
-    padding: 18
-    background: Rectangle {
-        color: Theme.surfaceHigh
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-    enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motionStd; easing.type: Easing.OutCubic } }
-    exit:  Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.motionFast; easing.type: Easing.OutCubic } }
 
     /* ─── Geometry helpers ────────────────────────────────────────────── */
 
@@ -214,7 +209,9 @@ Popup {
 
     /* ─── Layout ──────────────────────────────────────────────────────── */
 
-    contentItem: ColumnLayout {
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 18
         spacing: 14
 
         /* Header */

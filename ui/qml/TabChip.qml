@@ -42,14 +42,57 @@ Rectangle {
     /// True while the inline rename TextField is visible.
     property bool _editing: false
 
+    // SPEC-170: chip is a drag source. A semi-transparent ghost (dragShadow)
+    // mirrors the chip while the user drags; we toggle Drag.active manually
+    // because chip itself stays in the bar (we DON'T move the original chip).
+    Drag.active: dragShadow.Drag.active
+    Drag.dragType: Drag.Automatic
+    Drag.supportedActions: Qt.MoveAction
+    Drag.mimeData: {
+        "application/x-dante-tab-id": chip.tabId,
+        "text/plain": chip.tabId
+    }
+    Drag.keys: ["dante.tab"]
+
+    Item {
+        id: dragShadow
+        // Hidden geometry-only proxy that MouseArea's drag.target moves; lets
+        // us start a drag without yanking the chip out of its RowLayout.
+        width: chip.width; height: chip.height
+        opacity: 0
+        Drag.active: false
+    }
+
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
+        drag.target: dragShadow
+        drag.threshold: 6
+        // While a drag is alive we suppress the click semantics.
+        property bool _dragged: false
+        onPressed: (mouse) => {
+            _dragged = false
+            if (mouse.button === Qt.LeftButton && !chip._editing) {
+                dragShadow.x = 0
+                dragShadow.y = 0
+                dragShadow.Drag.active = true
+            }
+        }
+        onPositionChanged: (mouse) => {
+            if (drag.active) _dragged = true
+        }
+        onReleased: (mouse) => {
+            if (dragShadow.Drag.active) {
+                dragShadow.Drag.drop()
+                dragShadow.Drag.active = false
+            }
+        }
         onClicked: (mouse) => {
             if (chip._editing) return
+            if (_dragged) { _dragged = false; return }
             if (mouse.button === Qt.MiddleButton) chip.close()
             else if (mouse.button === Qt.RightButton) ctxMenu.popup()
             else chip.select()

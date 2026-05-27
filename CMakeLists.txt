@@ -19,6 +19,12 @@ project(dante-cli
     LANGUAGES CXX
 )
 
+# SPEC-150 — enable Objective-C++ on Apple so MacVoiceCapture.cpp can be
+# compiled as Obj-C++ (per-file LANGUAGE OBJCXX in infra/CMakeLists.txt).
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
+
 # ---- Language standard ----------------------------------------------------
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +41,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core Gui Qml Quick QuickControls2 Network Sql Concurrent Widgets
     Multimedia MultimediaWidgets
     WebEngineQuick
+    LinguistTools
 )
 
 qt_standard_project_setup(REQUIRES 6.5)

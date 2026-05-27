@@ -13,6 +13,7 @@
 // modules; will land in a follow-up version.
 import QtQuick 6.5
 import QtQuick.Controls 6.5
+import QtQuick.Layouts 6.5
 import "."
 
 Item {
@@ -23,6 +24,18 @@ Item {
     property int  cols: 2
     property int  rows: 1
     property var  spans: ({})       // cellIndex → {cols,rows}
+
+    /// SPEC-170: id of the tab that hosts this grid. Slots use it to ask
+    /// AppState which tab (if any) is mapped to each cell. Empty string =
+    /// fall back to appState.activeTabId at query time.
+    property string hostTabId: ""
+    function effectiveHostId() {
+        return hostTabId.length > 0 ? hostTabId : appState.activeTabId
+    }
+
+    /// Bumped after a successful drop so the Repeater re-evaluates which
+    /// cells should render an embedded tab instead of an EmptySlot.
+    property int assignmentsTick: 0
 
     /// Indices of cells covered by another cell's span.
     function coveredSet() {
@@ -49,6 +62,7 @@ Item {
     Repeater {
         model: root.cols * root.rows
         delegate: Item {
+            id: cellItem
             visible: !root.coveredSet()[index]
             // Span (1×1 unless explicitly merged).
             property var span: {
@@ -60,9 +74,74 @@ Item {
             width:  span.cols * root.cellW + (span.cols - 1) * root.gapPx
             height: span.rows * root.cellH + (span.rows - 1) * root.gapPx
 
+            // SPEC-170: ask AppState whether this cell already has a tab
+            // assigned. If yes, render an embedded placeholder representing
+            // the attached tab; the live TerminalView swap lands once the
+            // C++ side wires the per-cell PTY context (see integration doc).
+            // The `assignmentsTick` dependency ensures this property
+            // re-evaluates after a drop.
+            property string assignedTabId: {
+                root.assignmentsTick;   // dep
+                const hid = root.effectiveHostId()
+                return (hid && hid.length > 0 && appState.tabAtSlot)
+                    ? appState.tabAtSlot(hid, index)
+                    : ""
+            }
+
             EmptySlot {
                 anchors.fill: parent
+                visible: cellItem.assignedTabId.length === 0
+                hostTabId: root.effectiveHostId()
+                cellIndex: index
                 onRequested: (kind) => root.handleRequest(kind, index)
+                onTabDropped: (sourceTabId, ci) => { root.assignmentsTick += 1 }
+            }
+
+            // Lightweight stand-in for the attached tab's content. Renders
+            // the tab title + emoji so the user gets immediate confirmation
+            // the drop landed. Full TerminalView embedding is described in
+            // SPEC-170-INTEGRATION.md.
+            Rectangle {
+                anchors.fill: parent
+                visible: cellItem.assignedTabId.length > 0
+                color: Theme.surfaceLow
+                border.color: Theme.borderSoft
+                border.width: 1
+                radius: Theme.radiusSm
+                opacity: visible ? 1.0 : 0.0
+                Behavior on opacity { NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic } }
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "💻"
+                        font.pixelSize: 26
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        // We render the tabId by default. Once AppState
+                        // gains `tabTitle(QString)` / `tabEmoji(QString)`
+                        // Q_INVOKABLEs (see SPEC-170-INTEGRATION.md) this
+                        // can be upgraded to a richer card without further
+                        // QML changes.
+                        text: cellItem.assignedTabId.length > 0
+                              ? cellItem.assignedTabId
+                              : qsTr("Aba anexada")
+                        color: Theme.fgStrong
+                        font.family: Theme.fontMono
+                        font.pixelSize: 11
+                        elide: Text.ElideMiddle
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: qsTr("(tab anexada — sessão embarcada chega no próximo build)")
+                        color: Theme.fgFaint
+                        font.family: Theme.fontSans
+                        font.pixelSize: 10
+                    }
+                }
             }
         }
     }

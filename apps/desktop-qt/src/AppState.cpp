@@ -218,6 +218,7 @@ void AppState::hydrate() {
                 settings_.recentEmojis.clear();
                 for (const auto& v : recents) settings_.recentEmojis.append(v.toString());
             }
+            settings_.uiLanguage = o.value("uiLanguage").toString("system");
         }
     }
     emit settingsChanged();
@@ -867,7 +868,86 @@ void AppState::persistSettings() {
         {"appearance",          int(settings_.appearance)},
         {"autoCheckUpdates",    settings_.autoCheckUpdates},
         {"recentEmojis",        QJsonArray::fromStringList(settings_.recentEmojis)},
+        {"uiLanguage",          settings_.uiLanguage},
     }));
+}
+
+QString AppState::uiLanguage() const { return settings_.uiLanguage; }
+void AppState::setUiLanguage(const QString& locale) {
+    if (settings_.uiLanguage == locale) return;
+    settings_.uiLanguage = locale.isEmpty() ? QStringLiteral("system") : locale;
+    persistSettings();
+    emit settingsChanged();
+}
+
+/* ─── SPEC-170 — Drag tab → grid slot ─── */
+
+void AppState::attachTabToSlot(const QString& sourceTabId,
+                               const QString& hostTabId,
+                               int cellIndex) {
+    if (sourceTabId.isEmpty() || hostTabId.isEmpty() || cellIndex < 0) return;
+    if (sourceTabId == hostTabId) return;
+    // Clear any previous assignment of this source on any host (1 tab → 1 slot).
+    for (auto& t : tabs_) {
+        QVariantMap spans = t.gridSpans;
+        bool changed = false;
+        for (auto it = spans.begin(); it != spans.end(); ++it) {
+            auto m = it.value().toMap();
+            if (m.value("tabId").toString() == sourceTabId) {
+                m.remove("tabId");
+                it.value() = m;
+                changed = true;
+            }
+        }
+        if (changed) {
+            t.gridSpans = spans;
+            emit tabSplitChanged(t.id);
+        }
+    }
+    const int hi = indexOfTab(tabs_, hostTabId);
+    if (hi < 0) return;
+    Tab& host = tabs_[hi];
+    QVariantMap spans = host.gridSpans;
+    const QString key = QString::number(cellIndex);
+    QVariantMap m = spans.value(key).toMap();
+    m["tabId"] = sourceTabId;
+    if (!m.contains("cols")) m["cols"] = 1;
+    if (!m.contains("rows")) m["rows"] = 1;
+    spans[key] = m;
+    host.gridSpans = spans;
+    emit tabSplitChanged(host.id);
+    persistSession();
+}
+
+QString AppState::tabAtSlot(const QString& hostTabId, int cellIndex) const {
+    const int i = indexOfTab(tabs_, hostTabId);
+    if (i < 0 || cellIndex < 0) return {};
+    const auto m = tabs_[i].gridSpans.value(QString::number(cellIndex)).toMap();
+    return m.value("tabId").toString();
+}
+
+void AppState::detachTabFromSlot(const QString& hostTabId, int cellIndex) {
+    const int i = indexOfTab(tabs_, hostTabId);
+    if (i < 0 || cellIndex < 0) return;
+    Tab& host = tabs_[i];
+    QVariantMap spans = host.gridSpans;
+    const QString key = QString::number(cellIndex);
+    auto m = spans.value(key).toMap();
+    if (!m.contains("tabId")) return;
+    m.remove("tabId");
+    spans[key] = m;
+    host.gridSpans = spans;
+    emit tabSplitChanged(host.id);
+    persistSession();
+}
+
+QString AppState::tabTitle(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].title;
+}
+QString AppState::tabEmoji(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QString() : tabs_[i].emoji;
 }
 
 } // namespace dante

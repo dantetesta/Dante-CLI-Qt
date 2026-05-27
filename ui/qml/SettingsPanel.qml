@@ -8,30 +8,24 @@ import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
 import "."
 
-Popup {
+// SPEC-171: standardized on MovablePopup so Settings inherits the same
+// drag-by-header + resize-grip + Esc behavior used by Cheatsheet/About.
+// Public QML API is preserved (Main.qml still calls settingsPanel.open()).
+// The internal header strip (5-tab selector) is rendered inside the body
+// — MovablePopup's own drag header sits above it.
+MovablePopup {
     id: root
-
-    modal: true
-    focus: true
+    title: qsTr("Configurações")
+    icon: "⚙"
     width: 820
     height: Math.min(720, parent ? parent.height - 80 : 720)
-    padding: 0
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-
-    background: Rectangle {
-        color: Theme.surfaceHigh
-        border.color: Theme.borderStrong
-        border.width: 1
-        radius: Theme.radiusLg
-    }
-
-    enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motionStd; easing.type: Easing.OutCubic } }
-    exit:  Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.motionFast; easing.type: Easing.OutCubic } }
+    minWidth: 640
+    minHeight: 480
 
     /// Index of the currently visible tab (0..4).
     property int currentTab: 0
 
-    contentItem: ColumnLayout {
+    ColumnLayout {
         anchors.fill: parent
         spacing: 0
 

@@ -162,6 +162,7 @@ struct AppSettings {
     int     scrollback{50000};
     bool    restoreOnLaunch{true};
     QStringList recentEmojis{"💻","🚀","🐳","🦀","🐍","📦","⚡","🔥","✨","🎯"};
+    QString uiLanguage{"system"}; // SPEC-160: "pt_BR" | "en" | "system"
 };
 
 } // namespace dante

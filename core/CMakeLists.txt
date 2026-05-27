@@ -41,6 +41,8 @@ add_library(dante-core STATIC
     telemetry/Logger.h
     system/ProcessStats.cpp
     system/ProcessStats.h
+    i18n/Translator.cpp
+    i18n/Translator.h
 )
 
 target_include_directories(dante-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

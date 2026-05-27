@@ -56,7 +56,8 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  MovablePopup CheatsheetView AboutView EditorView
                  RecursiveSplit CalculatorView VideoView AIProvidersTab
                  RightSidebar SkillsTab AgentsTab MCPsTab ResourceRow
-                 AutoFillDialog GeneratorsPalette BrowserView)
+                 AutoFillDialog GeneratorsPalette BrowserView
+                 CalculatorPipWindow)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -116,6 +117,7 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/AutoFillDialog.qml
         ../../ui/qml/GeneratorsPalette.qml
         ../../ui/qml/BrowserView.qml
+        ../../ui/qml/CalculatorPipWindow.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml
@@ -136,6 +138,15 @@ set_target_properties(dante-cli PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
     OUTPUT_NAME "Dante CLI"
+)
+
+# SPEC-160 — compile the .ts catalogs into .qm and embed under :/i18n/.
+qt_add_translations(dante-cli
+    TS_FILES
+        ${CMAKE_SOURCE_DIR}/i18n/dante_pt_BR.ts
+        ${CMAKE_SOURCE_DIR}/i18n/dante_en.ts
+    RESOURCE_PREFIX /i18n
+    LUPDATE_OPTIONS -no-obsolete
 )
 
 # Windows: copy Qt DLLs + plugins (platforms/, imageformats/, styles/) +

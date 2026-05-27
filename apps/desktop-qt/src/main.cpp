@@ -30,6 +30,7 @@
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
+#include "i18n/Translator.h"
 
 #include <QtWebEngineQuick>
 #include <QApplication>
@@ -50,7 +51,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.33");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.34");
     // SPEC-022 — QtWebEngine must initialize BEFORE QApplication so Chromium
     // can install its argv hooks and GPU/IPC plumbing on the main thread.
     QtWebEngineQuick::initialize();
@@ -162,6 +163,19 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("resources",  resources);
     engine.rootContext()->setContextProperty("autoFill",   autoFill);
     engine.rootContext()->setContextProperty("generators", generators);
+
+    // SPEC-160 — install the runtime translator and bridge it to AppState.
+    auto* translator = new dante::i18n::Translator(&app);
+    translator->setLanguage(appState->uiLanguage().isEmpty()
+                            ? QStringLiteral("system")
+                            : appState->uiLanguage());
+    QObject::connect(translator, &dante::i18n::Translator::languageChanged,
+                     &engine, [&engine](const QString&) { engine.retranslate(); });
+    QObject::connect(appState, &dante::AppState::settingsChanged,
+                     translator, [translator, appState]() {
+                         translator->setLanguage(appState->uiLanguage());
+                     });
+    engine.rootContext()->setContextProperty("translator", translator);
     engine.rootContext()->setContextProperty("voice",      voice);
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);

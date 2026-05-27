@@ -30,6 +30,7 @@ class AppState : public QObject {
     Q_PROPERTY(int     appearanceMode      READ appearanceMode      WRITE setAppearanceMode      NOTIFY settingsChanged)
     Q_PROPERTY(bool    autoCheckUpdates    READ autoCheckUpdates    WRITE setAutoCheckUpdates    NOTIFY settingsChanged)
     Q_PROPERTY(QStringList recentEmojis    READ recentEmojis        NOTIFY settingsChanged)
+    Q_PROPERTY(QString uiLanguage          READ uiLanguage          WRITE setUiLanguage          NOTIFY settingsChanged)
 public:
     explicit AppState(QObject* parent = nullptr);
 
@@ -84,6 +85,20 @@ public:
     Q_INVOKABLE QString newBrowserTab(const QString& title, const QString& url);
     Q_INVOKABLE QString tabBrowserUrl(const QString& tabId) const;
     Q_INVOKABLE void    setTabBrowserUrl(const QString& tabId, const QString& url);
+
+    /* ─── SPEC-170 — Drag tab → grid slot ─── */
+    Q_INVOKABLE void    attachTabToSlot(const QString& sourceTabId,
+                                         const QString& hostTabId,
+                                         int cellIndex);
+    Q_INVOKABLE QString tabAtSlot(const QString& hostTabId, int cellIndex) const;
+    Q_INVOKABLE void    detachTabFromSlot(const QString& hostTabId, int cellIndex);
+    /// Convenience accessors used by the placeholder card in GridWorkspace.
+    Q_INVOKABLE QString tabTitle(const QString& tabId) const;
+    Q_INVOKABLE QString tabEmoji(const QString& tabId) const;
+
+    /* ─── SPEC-160 — i18n language preference ─── */
+    QString uiLanguage() const;
+    void    setUiLanguage(const QString& locale);
 
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".

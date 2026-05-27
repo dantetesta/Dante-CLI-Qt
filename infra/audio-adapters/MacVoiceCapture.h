@@ -1,19 +1,27 @@
 // macOS-native AVFoundation microphone capture.
 //
-// STATUS: stub. We default to QtVoiceCapture (Qt Multimedia, which itself
-// sits on AVAudioEngine on macOS) — it already gives us mono s16 16 kHz and
-// triggers the system microphone-permission prompt the first time we call
-// QAudioSource::start(). A bespoke AVFoundation path would mainly buy us:
-//   • Finer control over the AVAudioSession category (mixWithOthers, etc).
-//   • Direct access to the input meter levels (no manual RMS pass).
-//   • A future "voice activity detection" hook (silence → auto-stop).
-// File extension is .h+.cpp (not .mm) because the stub avoids Objective-C
-// symbols entirely. When implemented, rename to .mm and add AVFoundation
-// frameworks to the CMake target.
+// Implementation lives in MacVoiceCapture.cpp, but the entire macOS path is
+// gated behind `#ifdef __APPLE__` and uses Objective-C++ constructs. For the
+// build to pick that up the source-file LANGUAGE must be set to OBJCXX on
+// APPLE (see _integration/SPEC-150-INTEGRATION.md). On non-Apple targets the
+// same file builds as a no-op TU.
+//
+// Capture pipeline (parity with Swift sibling AudioRecorder.swift):
+//   1. Request mic permission via AVCaptureDevice requestAccessForMediaType.
+//   2. Spin AVAudioEngine, attach a tap on the inputNode.
+//   3. Convert each tapped AVAudioPCMBuffer (native float32 @ device rate)
+//      → 16 kHz mono Int16 LE via AVAudioConverter.
+//   4. Stream the resampled bytes into a RIFF/WAVE file matching the
+//      QtVoiceCapture format so the rest of the pipeline (GroqWhisper) is
+//      unchanged.
+//   5. Compute a smoothed RMS for the waveform UI (levelChanged signal).
 #pragma once
 
 #include "IVoiceCapture.h"
 #include <QString>
+
+#include <atomic>
+#include <memory>
 
 namespace dante::audio {
 
@@ -26,8 +34,16 @@ public:
     bool  start(const QString& outputWavPath) override;
     void  stop() override;
     void  cancel() override;
-    float currentLevel() const override { return 0.0f; }
-    bool  isRecording() const override  { return false; }
+    float currentLevel() const override { return level_.load(std::memory_order_relaxed); }
+    bool  isRecording() const override  { return recording_.load(std::memory_order_acquire); }
+
+private:
+    // Opaque PIMPL — definition is Objective-C++ inside the .cpp.
+    struct Impl;
+    std::unique_ptr<Impl> d_;
+
+    std::atomic<bool>  recording_{false};
+    std::atomic<float> level_{0.0f};
 };
 
 } // namespace dante::audio

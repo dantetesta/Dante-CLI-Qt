@@ -22,6 +22,14 @@ Rectangle {
     /// values: "terminal" | "browser" | "anonymous" | "video".
     signal requested(string kind)
 
+    /// SPEC-170: identity of the host tab + this cell. GridWorkspace sets
+    /// both so the drop handler can persist the assignment via AppState.
+    property string hostTabId: ""
+    property int    cellIndex: -1
+    /// Emitted after a successful drop so the host can refresh / animate in
+    /// the embedded content.
+    signal tabDropped(string sourceTabId, int cellIndex)
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 10
@@ -77,18 +85,35 @@ Rectangle {
         }
     }
 
-    /* ─── DropArea — accept dragged tabs onto this slot (visual feedback
-       only for now; the actual tab→slot binding lands once GridWorkspace
-       stores per-slot assignments). ─── */
+    /* ─── DropArea (SPEC-170) — wires the chip→slot drop to AppState.
+       The dragged TabChip exposes its tabId via the "dante.tab" key + a
+       custom "application/x-dante-tab-id" MIME entry. On drop we persist
+       the assignment and emit `tabDropped` so the host can swap the
+       EmptySlot for the assigned tab's content. ─── */
     DropArea {
         anchors.fill: parent
-        onEntered: dropOverlay.opacity = 1
-        onExited:  dropOverlay.opacity = 0
+        keys: ["dante.tab"]
+        onEntered: (drag) => {
+            dropOverlay.opacity = 1
+            pulseAnim.restart()
+        }
+        onExited: {
+            dropOverlay.opacity = 0
+            pulseAnim.stop()
+        }
         onDropped: (drop) => {
             dropOverlay.opacity = 0
-            // For now we just acknowledge — host will hook this when the
-            // assignments map is wired through AppState.
-            drop.accept(Qt.MoveAction)
+            pulseAnim.stop()
+            const sourceId = drop.getDataAsString("application/x-dante-tab-id")
+                          || drop.getDataAsString("text/plain")
+            if (sourceId && sourceId.length > 0 && root.hostTabId.length > 0
+                && root.cellIndex >= 0) {
+                appState.attachTabToSlot(sourceId, root.hostTabId, root.cellIndex)
+                root.tabDropped(sourceId, root.cellIndex)
+                drop.accept(Qt.MoveAction)
+            } else {
+                drop.accepted = false
+            }
         }
     }
     Rectangle {
@@ -101,6 +126,17 @@ Rectangle {
         border.width: 2
         opacity: 0
         Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
+
+        // Pulse the accent border while a drag is hovering (mirrors the
+        // Swift sibling's "looking-at-a-drop-target" affordance).
+        SequentialAnimation on border.width {
+            id: pulseAnim
+            running: false
+            loops: Animation.Infinite
+            NumberAnimation { from: 2; to: 3; duration: 380; easing.type: Easing.InOutQuad }
+            NumberAnimation { from: 3; to: 2; duration: 380; easing.type: Easing.InOutQuad }
+        }
+
         Text {
             anchors.centerIn: parent
             text: qsTr("Soltar para preencher o slot")
