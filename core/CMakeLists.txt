@@ -29,6 +29,9 @@ add_library(dante-core STATIC
     domain/Models.h
     domain/EventBus.cpp
     domain/EventBus.h
+    claude/ClaudeResources.h
+    claude/ClaudeResourceScanner.cpp
+    claude/ClaudeResourceScanner.h
     telemetry/Logger.cpp
     telemetry/Logger.h
     system/ProcessStats.cpp

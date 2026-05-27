@@ -132,6 +132,23 @@ ApplicationWindow {
                 }
             }
         }
+
+        // SPEC-070 — Right sidebar (Skills / Agents / MCPs). Width is bound
+        // to appState.rightSidebarVisible so the existing Ctrl+] shortcut
+        // and BottomToolbar toggle both control it.
+        Rectangle {
+            Layout.preferredWidth: appState.rightSidebarVisible && !root.focusMode ? 320 : 0
+            Layout.fillHeight: true
+            color: "transparent"
+            visible: Layout.preferredWidth > 0
+            clip: true
+            Behavior on Layout.preferredWidth {
+                NumberAnimation { duration: Theme.motionStd; easing.type: Easing.OutCubic }
+            }
+            RightSidebar {
+                anchors.fill: parent
+            }
+        }
     }
 
     // ───── AI overlay ─────

@@ -24,6 +24,7 @@
 #include "GitStatusProvider.h"
 #include "ProcessStatsController.h"
 #include "CalculatorController.h"
+#include "ResourcesController.h"
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
@@ -46,7 +47,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.29");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.30");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -85,6 +86,13 @@ int main(int argc, char* argv[]) {
     auto* processStats = new dante::ProcessStatsController(&app);
     auto* calculator = new dante::CalculatorController(&app);
     calculator->hydrate();
+    auto* resources = new dante::ResourcesController(&app);
+    resources->hydrate();
+    QObject::connect(resources, &dante::ResourcesController::requestTerminalWrite,
+                     &app, [appState, terminal](const QString& text) {
+                         if (!appState->activeTabId().isEmpty())
+                             terminal->write(appState->activeTabId(), text);
+                     });
 
     appState->hydrate();
     favorites->hydrate();
@@ -136,6 +144,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("terminal",   terminal);
     engine.rootContext()->setContextProperty("ai",         ai);
     engine.rootContext()->setContextProperty("aiProviders", aiProviders);
+    engine.rootContext()->setContextProperty("resources",  resources);
     engine.rootContext()->setContextProperty("voice",      voice);
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);

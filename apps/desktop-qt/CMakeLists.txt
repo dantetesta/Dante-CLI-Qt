@@ -38,6 +38,8 @@ qt_add_executable(dante-cli WIN32
     src/GitStatusProvider.h
     src/AIProvidersModel.cpp
     src/AIProvidersModel.h
+    src/ResourcesController.cpp
+    src/ResourcesController.h
 )
 
 # QML aliases — root files first, then editors/* preserves the relative path so
@@ -48,7 +50,8 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  UpdateBanner LayoutDesigner SettingsPanel
                  EmptySlot VideoOpenDialog GridWorkspace FileTreeView
                  MovablePopup CheatsheetView AboutView EditorView
-                 RecursiveSplit CalculatorView VideoView AIProvidersTab)
+                 RecursiveSplit CalculatorView VideoView AIProvidersTab
+                 RightSidebar SkillsTab AgentsTab MCPsTab ResourceRow)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -100,6 +103,11 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/VideoView.qml
         ../../ui/qml/AIProvidersTab.qml
         ../../ui/qml/editors/AIProviderEditor.qml
+        ../../ui/qml/RightSidebar.qml
+        ../../ui/qml/SkillsTab.qml
+        ../../ui/qml/AgentsTab.qml
+        ../../ui/qml/MCPsTab.qml
+        ../../ui/qml/ResourceRow.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml
