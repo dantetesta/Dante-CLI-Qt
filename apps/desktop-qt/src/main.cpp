@@ -14,6 +14,7 @@
 #include "TerminalBridge.h"
 #include "TerminalView.h"
 #include "AIController.h"
+#include "AIProvidersModel.h"
 #include "PaletteController.h"
 #include "VoiceController.h"
 #include "UpdateController.h"
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.28");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.29");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -70,6 +71,8 @@ int main(int argc, char* argv[]) {
     auto* credentials= new dante::CredentialsModel(&app);
     auto* terminal   = new dante::TerminalBridge(&app);
     auto* ai         = new dante::AIController(appState, &app);
+    auto* aiProviders = new dante::AIProvidersModel(&app);
+    aiProviders->hydrate();
     // Voice → Whisper. nullptr lets it spin its own GroqClient (independent
     // QNetworkAccessManager so the chat round-trip can't stall mic uploads).
     auto* voice      = new dante::VoiceController(appState, /*groq*/ nullptr, &app);
@@ -132,6 +135,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("credentials",credentials);
     engine.rootContext()->setContextProperty("terminal",   terminal);
     engine.rootContext()->setContextProperty("ai",         ai);
+    engine.rootContext()->setContextProperty("aiProviders", aiProviders);
     engine.rootContext()->setContextProperty("voice",      voice);
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);

@@ -365,69 +365,8 @@ Popup {
                 }
             }
 
-            // 3 — AI Providers (placeholder — providers are still hardcoded
-            // in the toolbar; the editor lands once the backend stores them).
-            ScrollView {
-                clip: true
-                ColumnLayout {
-                    width: tabStack.width
-                    spacing: 18
-                    Item { Layout.preferredHeight: 12 }
-
-                    Text {
-                        Layout.leftMargin: 18; Layout.rightMargin: 18
-                        Layout.fillWidth: true
-                        text: qsTr("Configure as CLIs de IA exibidas na toolbar.")
-                        color: Theme.fgMuted
-                        font.family: Theme.fontSans
-                        font.pixelSize: 12
-                    }
-                    SectionCard {
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-                            Layout.margins: 14
-
-                            // Hardcoded preview rows mirroring the Swift defaults.
-                            Repeater {
-                                model: [
-                                    {name: "Claude",  cmd: "claude",  icon: "🤖", colorIdx: 2},
-                                    {name: "Gemini",  cmd: "gemini",  icon: "✨", colorIdx: 6},
-                                    {name: "Codex",   cmd: "codex",   icon: "💻", colorIdx: 4}
-                                ]
-                                delegate: ProviderRow {
-                                    name: modelData.name
-                                    command: modelData.cmd
-                                    icon: modelData.icon
-                                    colorIdx: modelData.colorIdx
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                Layout.topMargin: 4
-                                Button {
-                                    text: qsTr("Adicionar Provider")
-                                    enabled: false
-                                    onClicked: { /* TODO: backend */ }
-                                }
-                                Button {
-                                    text: qsTr("Resetar para padrão")
-                                    flat: true
-                                    enabled: false
-                                }
-                                Item { Layout.fillWidth: true }
-                                Text {
-                                    text: qsTr("(edição em breve)")
-                                    color: Theme.fgFaint
-                                    font.pixelSize: 10
-                                }
-                            }
-                        }
-                    }
-                    Item { Layout.preferredHeight: 12 }
-                }
-            }
+            // 3 — AI Providers (SPEC-040 — full editor backed by aiProviders).
+            AIProvidersTab {}
 
             // 4 — Atualizações
             ScrollView {
