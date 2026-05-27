@@ -25,6 +25,8 @@
 #include "ProcessStatsController.h"
 #include "CalculatorController.h"
 #include "ResourcesController.h"
+#include "AutoFillController.h"
+#include "GeneratorsModel.h"
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
@@ -47,7 +49,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.30");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.31");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -93,6 +95,13 @@ int main(int argc, char* argv[]) {
                          if (!appState->activeTabId().isEmpty())
                              terminal->write(appState->activeTabId(), text);
                      });
+    auto* autoFill   = new dante::AutoFillController(&app);
+    auto* generators = new dante::GeneratorsModel(&app);
+    QObject::connect(autoFill, &dante::AutoFillController::commandReady,
+                     &app, [appState, terminal](const QString& text) {
+                         if (!appState->activeTabId().isEmpty())
+                             terminal->write(appState->activeTabId(), text);
+                     });
 
     appState->hydrate();
     favorites->hydrate();
@@ -123,6 +132,8 @@ int main(int argc, char* argv[]) {
     //  active TerminalView gets the bytes through the same path AI uses.)
     QObject::connect(palette, &dante::PaletteController::terminalWriteRequested,
                      terminal, &dante::TerminalBridge::write);
+    QObject::connect(palette, &dante::PaletteController::autoFillRequested,
+                     autoFill, &dante::AutoFillController::prepare);
     QObject::connect(palette, &dante::PaletteController::aiToggleRequested,
                      ai, &dante::AIController::toggle);
     // voiceStartRequested + focusTerminalRequested are QML-only side effects.
@@ -145,6 +156,8 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("ai",         ai);
     engine.rootContext()->setContextProperty("aiProviders", aiProviders);
     engine.rootContext()->setContextProperty("resources",  resources);
+    engine.rootContext()->setContextProperty("autoFill",   autoFill);
+    engine.rootContext()->setContextProperty("generators", generators);
     engine.rootContext()->setContextProperty("voice",      voice);
     engine.rootContext()->setContextProperty("schemes",    schemes);
     engine.rootContext()->setContextProperty("palette",    palette);

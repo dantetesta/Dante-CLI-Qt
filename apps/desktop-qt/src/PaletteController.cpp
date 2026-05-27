@@ -1,5 +1,6 @@
 // PaletteController — see header for design notes.
 #include "PaletteController.h"
+#include "autofill/AutoFillEngine.h"
 
 #include "AppState.h"
 #include "FavoritesModel.h"
@@ -148,7 +149,11 @@ void PaletteController::rebuildCatalog() {
                 if (!appState_) return;
                 const QString tabId = appState_->activeTabId();
                 if (tabId.isEmpty()) return;
-                emit terminalWriteRequested(tabId, command);
+                if (dante::autofill::AutoFillEngine::scan(command).isEmpty()) {
+                    emit terminalWriteRequested(tabId, command);
+                } else {
+                    emit autoFillRequested(command);
+                }
             };
             catalog_.append(std::move(c));
         }

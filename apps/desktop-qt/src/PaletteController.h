@@ -68,6 +68,9 @@ signals:
 
     /// High-level side-effect signals — main.cpp wires to controllers.
     void terminalWriteRequested(const QString& sessionId, const QString& text);
+    /// SPEC-080 — emitted when a snippet template contains placeholders.
+    /// main.cpp routes this to AutoFillController::prepare().
+    void autoFillRequested(const QString& text);
     void clearRequested(const QString& sessionId);
     void aiToggleRequested();
     void voiceStartRequested();

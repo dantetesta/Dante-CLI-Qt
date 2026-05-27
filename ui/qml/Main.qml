@@ -201,6 +201,16 @@ ApplicationWindow {
         id: aboutView
     }
 
+    // ───── AutoFill dialog — SPEC-080 ─────
+    AutoFillDialog {
+        id: autoFillDialog
+    }
+
+    // ───── Generators palette — SPEC-081 ─────
+    GeneratorsPalette {
+        id: generatorsPalette
+    }
+
     // ───── SPEC-021 — Open file dialog (Ctrl+O) ─────
     FileDialog {
         id: openFileDlg
@@ -319,6 +329,8 @@ ApplicationWindow {
     }
     // SPEC-024 — open Calculator tab (single instance, focuses if already open).
     Shortcut { sequence: "Ctrl+Shift+K"; onActivated: appState.openCalculatorTab() }
+    // SPEC-081 — Generators palette (Ctrl+G).
+    Shortcut { sequence: "Ctrl+G"; onActivated: generatorsPalette.open() }
     // SPEC-021 — Cmd+O open file in editor, Cmd+S save active editor.
     Shortcut {
         sequences: [StandardKey.Open]
