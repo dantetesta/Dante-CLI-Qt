@@ -1,5 +1,9 @@
 #include "CalculatorEngine.h"
 
+// MSVC's <cmath> hides M_PI / M_E unless _USE_MATH_DEFINES is set before any
+// math header. Define it here so the constants table resolves on Windows;
+// harmless on Clang/libc++ where the macros exist unconditionally.
+#define _USE_MATH_DEFINES
 #include <QStringView>
 #include <cmath>
 #include <cctype>
