@@ -26,6 +26,8 @@ add_library(dante-core STATIC
     domain/EventBus.h
     telemetry/Logger.cpp
     telemetry/Logger.h
+    system/ProcessStats.cpp
+    system/ProcessStats.h
 )
 
 target_include_directories(dante-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -33,6 +35,10 @@ target_include_directories(dante-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dante-core PUBLIC
     Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql Qt6::Concurrent
 )
+
+if(WIN32)
+    target_link_libraries(dante-core PUBLIC psapi)
+endif()
 
 set_target_properties(dante-core PROPERTIES
     POSITION_INDEPENDENT_CODE ON

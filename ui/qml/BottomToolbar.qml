@@ -45,13 +45,62 @@ Rectangle {
         }
 
         Sep {}
-        // CPU / mem stats — placeholder for now (Swift sibling tracks real values).
-        Text {
-            text: "0% · 0 B"
-            color: Theme.fgFaint
-            font.family: Theme.fontMono
-            font.pixelSize: 11
+        // Live CPU/RAM pill wired to dante::ProcessStatsController. Muted so it
+        // reads as ambient telemetry, not an action. Tooltip on hover.
+        Rectangle {
+            id: statsPill
             Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: 22
+            Layout.preferredWidth: statsRow.implicitWidth + 14
+            radius: Theme.radiusSm
+            color: statsHover.containsMouse ? Theme.surfaceHigh : "transparent"
+            border.color: statsHover.containsMouse ? Theme.borderSoft : "transparent"
+            border.width: 1
+            Behavior on color       { ColorAnimation { duration: Theme.motionFast } }
+            Behavior on border.color{ ColorAnimation { duration: Theme.motionFast } }
+
+            Row {
+                id: statsRow
+                anchors.centerIn: parent
+                spacing: 6
+                Text {
+                    text: (typeof processStats !== "undefined" && processStats)
+                          ? ("CPU " + Math.round(processStats.cpuPercent) + "%")
+                          : "CPU 0%"
+                    color: Theme.fgMuted
+                    font.family: Theme.fontMono
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: "·"
+                    color: Theme.fgFaint
+                    font.family: Theme.fontMono
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: (typeof processStats !== "undefined" && processStats)
+                          ? (Math.round(processStats.memoryMB) + " MB")
+                          : "0 MB"
+                    color: Theme.fgMuted
+                    font.family: Theme.fontMono
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            MouseArea {
+                id: statsHover
+                anchors.fill: parent
+                hoverEnabled: true
+                ToolTip.text: (typeof processStats !== "undefined" && processStats)
+                              ? processStats.tooltipText
+                              : ""
+                ToolTip.visible: containsMouse
+                                 && (typeof processStats !== "undefined" && processStats)
+                ToolTip.delay: 400
+            }
         }
 
         Item { Layout.fillWidth: true }

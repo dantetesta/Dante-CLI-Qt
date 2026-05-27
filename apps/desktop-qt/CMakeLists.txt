@@ -30,6 +30,8 @@ qt_add_executable(dante-cli WIN32
     src/LayoutTemplatesController.h
     src/FileTreeController.cpp
     src/FileTreeController.h
+    src/ProcessStatsController.cpp
+    src/ProcessStatsController.h
 )
 
 # QML aliases — root files first, then editors/* preserves the relative path so

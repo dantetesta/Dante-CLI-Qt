@@ -20,6 +20,7 @@
 #include "TrayController.h"
 #include "LayoutTemplatesController.h"
 #include "FileTreeController.h"
+#include "ProcessStatsController.h"
 
 #include "telemetry/Logger.h"
 #include "themes/ThemeRegistry.h"
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName("Dante Testa");
     QCoreApplication::setOrganizationDomain("dantetesta.com.br");
     QCoreApplication::setApplicationName("Dante CLI");
-    QCoreApplication::setApplicationVersion("0.7.0-alpha.25");
+    QCoreApplication::setApplicationVersion("0.7.0-alpha.26");
 
     // QApplication (not QGuiApplication) is required because QSystemTrayIcon's
     // context menu uses QMenu, which is a QWidget. Linking Widgets is already
@@ -74,6 +75,7 @@ int main(int argc, char* argv[]) {
     auto* updater    = new dante::UpdateController(&app);
     auto* templates  = new dante::LayoutTemplatesController(&app);
     auto* fileTree   = new dante::FileTreeController(&app);
+    auto* processStats = new dante::ProcessStatsController(&app);
 
     appState->hydrate();
     favorites->hydrate();
@@ -130,6 +132,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("updater",    updater);
     engine.rootContext()->setContextProperty("templates",  templates);
     engine.rootContext()->setContextProperty("fileTree",   fileTree);
+    engine.rootContext()->setContextProperty("processStats", processStats);
 
     // Kick off a first update check after the UI is up (deferred so a slow
     // network probe doesn't delay window-show).
