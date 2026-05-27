@@ -32,6 +32,8 @@ qt_add_executable(dante-cli WIN32
     src/FileTreeController.h
     src/ProcessStatsController.cpp
     src/ProcessStatsController.h
+    src/CalculatorController.cpp
+    src/CalculatorController.h
 )
 
 # QML aliases — root files first, then editors/* preserves the relative path so
@@ -42,7 +44,7 @@ foreach(qml_file Main TabBar TabChip Sidebar Terminal BottomToolbar Theme
                  UpdateBanner LayoutDesigner SettingsPanel
                  EmptySlot VideoOpenDialog GridWorkspace FileTreeView
                  MovablePopup CheatsheetView AboutView EditorView
-                 RecursiveSplit)
+                 RecursiveSplit CalculatorView)
     set_source_files_properties(
         ../../ui/qml/${qml_file}.qml
         PROPERTIES QT_RESOURCE_ALIAS ${qml_file}.qml
@@ -89,6 +91,7 @@ qt_add_qml_module(dante-cli
         ../../ui/qml/AboutView.qml
         ../../ui/qml/EditorView.qml
         ../../ui/qml/RecursiveSplit.qml
+        ../../ui/qml/CalculatorView.qml
         ../../ui/qml/editors/EmojiPicker.qml
         ../../ui/qml/editors/FavoriteEditor.qml
         ../../ui/qml/editors/SnippetEditor.qml

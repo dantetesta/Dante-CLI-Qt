@@ -18,7 +18,7 @@ namespace dante {
 // Tab system
 // -----------------------------------------------------------------------------
 
-enum class TabKind { Terminal, Editor, Preview, Video, Browser };
+enum class TabKind { Terminal, Editor, Preview, Video, Browser, Calculator };
 
 /// Mirrors `TerminalTab.swift`.
 struct Tab {

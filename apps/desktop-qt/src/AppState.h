@@ -72,6 +72,8 @@ public:
     Q_INVOKABLE QString editorLanguage(const QString& tabId) const;
     Q_INVOKABLE bool    editorDirty(const QString& tabId) const;
     Q_INVOKABLE int     tabKind(const QString& tabId) const; // 0=Terminal, 1=Editor, …
+    Q_INVOKABLE QString tabKindString(const QString& tabId) const;
+    Q_INVOKABLE QString openCalculatorTab();
 
     /* ─── Split panes (max 2 per tab) ─── */
     /// "" / "vertical" / "horizontal".

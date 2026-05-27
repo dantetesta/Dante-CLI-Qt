@@ -300,6 +300,8 @@ ApplicationWindow {
         sequences: ["F2"]
         onActivated: aboutView.opened ? aboutView.close() : aboutView.open()
     }
+    // SPEC-024 — open Calculator tab (single instance, focuses if already open).
+    Shortcut { sequence: "Ctrl+Shift+K"; onActivated: appState.openCalculatorTab() }
     // SPEC-021 — Cmd+O open file in editor, Cmd+S save active editor.
     Shortcut {
         sequences: [StandardKey.Open]

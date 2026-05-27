@@ -17,6 +17,55 @@ Rectangle {
 
     function appendChar(s) { calculator.setDisplay(calculator.displayText + s) }
 
+    component CalcButton: Rectangle {
+        id: btn
+        property string text: ""
+        property string kind: "digit"   // digit | op | accent | func | memory | danger
+        signal clicked()
+
+        property color baseColor: {
+            if (kind === "accent") return Theme.accent
+            if (kind === "op")     return Theme.surfaceHigh
+            if (kind === "func")   return Theme.surface
+            if (kind === "memory") return Theme.surface
+            if (kind === "danger") return Theme.surface
+            return Theme.surfaceHigh
+        }
+        property color baseFg: {
+            if (kind === "accent") return Theme.fgStrong
+            if (kind === "danger") return Theme.danger
+            if (kind === "func" || kind === "memory") return Theme.fgMuted
+            return Theme.fgStrong
+        }
+
+        Layout.preferredHeight: 52
+        Layout.minimumHeight: 44
+        radius: Theme.radiusMd
+        color: ma.pressed
+               ? Qt.darker(baseColor, 1.2)
+               : (ma.containsMouse ? Qt.lighter(baseColor, 1.15) : baseColor)
+        border.color: kind === "accent" ? Theme.accent : Theme.borderSoft
+
+        Behavior on color { ColorAnimation { duration: 100 } }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.text
+            color: btn.baseFg
+            font.family: btn.kind === "func" ? Theme.fontMono : Theme.fontSans
+            font.pixelSize: btn.kind === "func" || btn.kind === "memory" ? 13 : 16
+            font.bold: btn.kind === "accent" || btn.kind === "op"
+        }
+
+        MouseArea {
+            id: ma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: btn.clicked()
+        }
+    }
+
     Item {
         id: keySink
         focus: true
@@ -310,55 +359,6 @@ Rectangle {
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                 }
             }
-        }
-    }
-
-    component CalcButton: Rectangle {
-        id: btn
-        property string text: ""
-        property string kind: "digit"   // digit | op | accent | func | memory | danger
-        signal clicked()
-
-        property color baseColor: {
-            if (kind === "accent") return Theme.accent
-            if (kind === "op")     return Theme.surfaceHigh
-            if (kind === "func")   return Theme.surface
-            if (kind === "memory") return Theme.surface
-            if (kind === "danger") return Theme.surface
-            return Theme.surfaceHigh
-        }
-        property color baseFg: {
-            if (kind === "accent") return Theme.fgStrong
-            if (kind === "danger") return Theme.danger
-            if (kind === "func" || kind === "memory") return Theme.fgMuted
-            return Theme.fgStrong
-        }
-
-        Layout.preferredHeight: 52
-        Layout.minimumHeight: 44
-        radius: Theme.radiusMd
-        color: ma.pressed
-               ? Qt.darker(baseColor, 1.2)
-               : (ma.containsMouse ? Qt.lighter(baseColor, 1.15) : baseColor)
-        border.color: kind === "accent" ? Theme.accent : Theme.borderSoft
-
-        Behavior on color { ColorAnimation { duration: 100 } }
-
-        Text {
-            anchors.centerIn: parent
-            text: btn.text
-            color: btn.baseFg
-            font.family: btn.kind === "func" ? Theme.fontMono : Theme.fontSans
-            font.pixelSize: btn.kind === "func" || btn.kind === "memory" ? 13 : 16
-            font.bold: btn.kind === "accent" || btn.kind === "op"
-        }
-
-        MouseArea {
-            id: ma
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: btn.clicked()
         }
     }
 

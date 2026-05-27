@@ -444,6 +444,40 @@ int AppState::tabKind(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);
     return i < 0 ? 0 : int(tabs_[i].kind);
 }
+QString AppState::tabKindString(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return QStringLiteral("terminal");
+    switch (tabs_[i].kind) {
+        case TabKind::Terminal:   return QStringLiteral("terminal");
+        case TabKind::Editor:     return QStringLiteral("editor");
+        case TabKind::Preview:    return QStringLiteral("preview");
+        case TabKind::Video:      return QStringLiteral("video");
+        case TabKind::Browser:    return QStringLiteral("browser");
+        case TabKind::Calculator: return QStringLiteral("calculator");
+    }
+    return QStringLiteral("terminal");
+}
+QString AppState::openCalculatorTab() {
+    for (const auto& t : tabs_) {
+        if (t.kind == TabKind::Calculator) {
+            activeTabId_ = t.id;
+            emit activeTabIdChanged();
+            return t.id;
+        }
+    }
+    Tab t;
+    t.id    = newId();
+    t.kind  = TabKind::Calculator;
+    t.title = QStringLiteral("Calculadora");
+    t.emoji = QStringLiteral("🧮");
+    t.color = QStringLiteral("#7C82FF");
+    tabs_.append(t);
+    activeTabId_ = t.id;
+    emit tabsChanged();
+    emit activeTabIdChanged();
+    persistSession();
+    return t.id;
+}
 
 /* ─────────────────────────────────────────────────────────────────────── */
 

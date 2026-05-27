@@ -4,6 +4,8 @@ add_library(dante-core STATIC
     persistence/JsonStore.h
     persistence/AppPaths.cpp
     persistence/AppPaths.h
+    calculator/CalculatorEngine.cpp
+    calculator/CalculatorEngine.h
     terminal/TerminalSession.cpp
     terminal/TerminalSession.h
     terminal/TerminalRegistry.cpp
