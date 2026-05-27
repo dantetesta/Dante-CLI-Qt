@@ -37,7 +37,7 @@ deve fechar pelo menos um gap e referenciá-lo na mensagem.
 | `Views/RightSidebar/*` (Skills, Agents, MCPs) | ❌ **não existe** (SPEC-070) | ❌ |
 | `Views/Settings/SettingsScene` (5 abas) | `ui/qml/SettingsPanel.qml` (5 abas) | 🟡 — aba "AI Providers" stub (SPEC-040) |
 | `Views/Toolbar/*` (AI launcher, Mic, Stats, Split picker) | `ui/qml/BottomToolbar.qml` + `VoiceWidget.qml` | 🟡 — falta CPU/RAM (SPEC-060), AI launcher é hardcoded (SPEC-040) |
-| `Views/Terminal/PaneSplitView` + `PaneNode` (binary tree, N panes) | `ui/qml/SplitContainer.qml` + `GridWorkspace.qml` | 🟡 — **só 2 panes ou grid** (SPEC-110) |
+| `Views/Terminal/PaneSplitView` + `PaneNode` (binary tree, N panes) | `ui/qml/RecursiveSplit.qml` + `SplitContainer.qml` + `GridWorkspace.qml` | ✅ — RecursiveSplit (SPEC-110, alpha.25) |
 | `Views/TabBar/TabChip` (pin, inline edit, color, emoji, scheme menu) | `ui/qml/TabBar.qml` + `TabChip.qml` | 🟡 — falta pin, inline edit double-click, color picker no menu (SPEC-120) |
 | `Views/Editor/EditorPaneView` (Highlightr) | ❌ **falta editor com syntax highlight** (SPEC-021) | ❌ |
 | `Views/Browser/BrowserPaneView` (WKWebView) | ❌ **falta browser embedded** (SPEC-022) | ❌ |
@@ -117,7 +117,7 @@ Catálogo Swift completo no audit. Status Qt:
 |---|---|---|---|
 | SPEC-021 | **Editor pane** com syntax highlight | M (1 dia) | `QSyntaxHighlighter` ou `KSyntaxHighlighting` (Qt-friendly LGPL). Adiciona `EditorContent` ao Tab kind. ⌘O / ⌘S funcionam aí. |
 | SPEC-100 | **32 themes faltando** (43 total) | S (2 h) | Portar `TerminalThemes.swift` → adicionar entries em `ThemeRegistry.cpp`. Mecânico. |
-| SPEC-110 | **PaneNode recursivo** — N panes por aba | L (2 dias) | Refatorar `SplitContainer` p/ árvore binária. Permite splits `vertical(vertical(a,b), horizontal(c,d))`. |
+| SPEC-110 | ✅ **PaneNode recursivo** — N panes por aba (alpha.25) | L (2 dias) | `Tab.paneTree` (QVariantMap recursivo) + `RecursiveSplit.qml` (Loader via URL para quebrar recursão) + `AppState.splitPane/closePaneInTree/setPaneRatio`. Splits `vertical(vertical(a,b), horizontal(c,d))` ok. |
 | SPEC-120 | **TabChip features faltando** — pin, double-click rename, color picker no menu, scheme override | S (3 h) | Right-click menu + inline edit. AppState já persiste `pinned` (não enforça). |
 | SPEC-130 | **EmojiPicker completo** — 1500+ emojis, categorias, recents | M (4 h) | Portar `EmojiCatalog.swift` (já tem o dado pronto). |
 | SPEC-140 | **Cheatsheet popup** (⌘/) | S (2 h) | Tabela em QML. Conteúdo já está nesse SPEC. |
@@ -174,7 +174,7 @@ Foco em fechar P0 antes de tocar P1.
 5. ✅ SPEC-031 — mouse modes VT 1000/1002/1003/1006 (alpha.22, commit 339f67b)
 6. ✅ SPEC-130 — EmojiPicker completo (~700 emojis, 13 cats, recents) (alpha.23, commit cb57e45)
 7. ✅ SPEC-021 — Editor pane (sem syntax highlight ainda) (alpha.24, commit 6b2d9b6)
-8. ⏳ SPEC-110 — PaneNode recursivo (N panes) — em andamento
+8. ✅ SPEC-110 — PaneNode recursivo (N panes), `RecursiveSplit.qml` via `Loader { source }` (alpha.25)
 
 ### Fase B — "paridade visível" (alpha.24 → alpha.32)
 8. SPEC-090 + 091–098 — todos os atalhos (alpha.24)

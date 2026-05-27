@@ -361,13 +361,39 @@ ApplicationWindow {
     // Vertical = side-by-side (Ctrl+\), horizontal = stacked (Ctrl+Shift+\).
     // Close focused pane = Ctrl+Shift+W. Focus left/right between two panes
     // with Ctrl+Alt+← / →. All ops delegate to the active SplitContainer.
-    Shortcut { sequence: "Ctrl+\\";       onActivated: appState.splitActive("vertical") }
-    Shortcut { sequence: "Ctrl+Shift+\\"; onActivated: appState.splitActive("horizontal") }
+    // SPEC-110 — when the active tab has a pane tree, split/close operate on
+    // the focused leaf. Otherwise fall back to the legacy 2-pane Split.
+    Shortcut {
+        sequence: "Ctrl+\\"
+        onActivated: {
+            if (appState.tabPaneTree(appState.activeTabId).split !== undefined
+                  || appState.tabPaneTree(appState.activeTabId).leaf !== undefined) {
+                appState.splitPane(appState.activeTabId, term.focusedSessionId, "vertical")
+            } else {
+                appState.splitActive("vertical")
+            }
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+Shift+\\"
+        onActivated: {
+            if (appState.tabPaneTree(appState.activeTabId).split !== undefined
+                  || appState.tabPaneTree(appState.activeTabId).leaf !== undefined) {
+                appState.splitPane(appState.activeTabId, term.focusedSessionId, "horizontal")
+            } else {
+                appState.splitActive("horizontal")
+            }
+        }
+    }
     Shortcut {
         sequence: "Ctrl+Shift+W"
         onActivated: {
-            const sc = term.splitContainer
-            if (sc && sc.isSplit) sc.closePane(sc.focusedSide)
+            if (appState.tabPaneTree(appState.activeTabId).split !== undefined) {
+                appState.closePaneInTree(appState.activeTabId, term.focusedSessionId)
+            } else {
+                const sc = term.splitContainer
+                if (sc && sc.isSplit) sc.closePane(sc.focusedSide)
+            }
         }
     }
     Shortcut {

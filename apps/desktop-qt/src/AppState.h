@@ -103,6 +103,26 @@ public:
     /// caller before invoking — same convention as splitActive("")).
     Q_INVOKABLE void setTabGrid(const QString& tabId, int cols, int rows, const QVariantMap& spans);
 
+    /* ─── SPEC-110 — recursive pane tree (N panes) ─── */
+    /// Returns the pane tree for a tab (empty map when single-pane).
+    Q_INVOKABLE QVariantMap tabPaneTree(const QString& tabId) const;
+    /// Splits the leaf whose sessionId matches `targetSessionId`. If the tab
+    /// has no tree yet, it's promoted to a 2-pane tree first. Returns the
+    /// newly created leaf's sessionId.
+    Q_INVOKABLE QString splitPane(const QString& tabId,
+                                  const QString& targetSessionId,
+                                  const QString& axis /* "vertical"|"horizontal" */);
+    /// Removes the leaf identified by `targetSessionId`. Collapses the
+    /// sibling up. If the tree degenerates to a single leaf it's stored as
+    /// Tab.sessionId and paneTree is cleared.
+    Q_INVOKABLE void closePaneInTree(const QString& tabId,
+                                     const QString& targetSessionId);
+    /// Persist a new ratio for the split node at `path` (array of 0/1
+    /// indices descending the tree). 0 = left/top child, 1 = right/bottom.
+    Q_INVOKABLE void setPaneRatio(const QString& tabId,
+                                  const QVariantList& path,
+                                  double ratio);
+
     /* ─── Settings ─── */
     QStringList recentEmojis() const { return settings_.recentEmojis; }
     /// Move `emoji` to the head of the recents list. Dedups + caps to 32.

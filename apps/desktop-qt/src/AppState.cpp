@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <functional>
 #include <algorithm>
 
 namespace dante {
@@ -39,6 +40,103 @@ namespace {
         return m;
     }
 
+    // SPEC-110 — recursive serialization for the pane tree.
+    QJsonValue paneTreeToJson(const QVariantMap& node) {
+        if (node.isEmpty()) return QJsonValue();
+        if (node.contains("leaf")) {
+            return QJsonObject{{"leaf", node.value("leaf").toString()}};
+        }
+        bool ok = false;
+        double r = node.value("ratio").toDouble(&ok);
+        if (!ok) r = 0.5;
+        return QJsonObject{
+            {"split", node.value("split").toString()},
+            {"ratio", r},
+            {"first",  paneTreeToJson(node.value("first").toMap())},
+            {"second", paneTreeToJson(node.value("second").toMap())},
+        };
+    }
+    QVariantMap paneTreeFromJson(const QJsonValue& v) {
+        if (!v.isObject()) return {};
+        const auto o = v.toObject();
+        if (o.contains("leaf")) {
+            return { {"leaf", o.value("leaf").toString()} };
+        }
+        return {
+            {"split",  o.value("split").toString()},
+            {"ratio",  o.value("ratio").toDouble(0.5)},
+            {"first",  paneTreeFromJson(o.value("first"))},
+            {"second", paneTreeFromJson(o.value("second"))},
+        };
+    }
+
+    /// Returns true if `node` contains a leaf with the given sessionId.
+    bool paneTreeContains(const QVariantMap& node, const QString& sid) {
+        if (node.isEmpty()) return false;
+        if (node.contains("leaf")) return node.value("leaf").toString() == sid;
+        return paneTreeContains(node.value("first").toMap(), sid)
+            || paneTreeContains(node.value("second").toMap(), sid);
+    }
+
+    /// Returns every leaf sessionId in DFS order.
+    QStringList paneTreeLeaves(const QVariantMap& node) {
+        QStringList out;
+        if (node.isEmpty()) return out;
+        if (node.contains("leaf")) { out << node.value("leaf").toString(); return out; }
+        out << paneTreeLeaves(node.value("first").toMap());
+        out << paneTreeLeaves(node.value("second").toMap());
+        return out;
+    }
+
+    /// Returns a copy of `node` with the leaf matching `target` replaced by
+    /// a new split holding (oldLeaf, newLeaf) in the given direction.
+    QVariantMap paneTreeSplit(const QVariantMap& node, const QString& target,
+                              const QString& axis, const QString& newLeaf) {
+        if (node.isEmpty()) return node;
+        if (node.contains("leaf")) {
+            if (node.value("leaf").toString() != target) return node;
+            return {
+                {"split", axis},
+                {"ratio", 0.5},
+                {"first",  QVariantMap{{"leaf", target}}},
+                {"second", QVariantMap{{"leaf", newLeaf}}},
+            };
+        }
+        QVariantMap copy = node;
+        copy["first"]  = paneTreeSplit(node.value("first").toMap(),  target, axis, newLeaf);
+        copy["second"] = paneTreeSplit(node.value("second").toMap(), target, axis, newLeaf);
+        return copy;
+    }
+
+    /// Returns the node with `target` removed and its sibling collapsed up.
+    /// If the whole tree degenerates to a single leaf, returns that leaf
+    /// (caller can detect and store as Tab.sessionId).
+    QVariantMap paneTreeRemove(const QVariantMap& node, const QString& target) {
+        if (node.isEmpty()) return node;
+        if (node.contains("leaf")) {
+            return (node.value("leaf").toString() == target) ? QVariantMap{} : node;
+        }
+        const auto first  = node.value("first").toMap();
+        const auto second = node.value("second").toMap();
+        // Direct hit on either side → collapse to the other.
+        if (first.contains("leaf")  && first.value("leaf").toString()  == target) return second;
+        if (second.contains("leaf") && second.value("leaf").toString() == target) return first;
+        QVariantMap copy = node;
+        if (paneTreeContains(first, target)) {
+            const auto pruned = paneTreeRemove(first, target);
+            if (pruned.isEmpty()) return second;
+            copy["first"] = pruned;
+            return copy;
+        }
+        if (paneTreeContains(second, target)) {
+            const auto pruned = paneTreeRemove(second, target);
+            if (pruned.isEmpty()) return first;
+            copy["second"] = pruned;
+            return copy;
+        }
+        return node;
+    }
+
     QJsonObject tabToJson(const Tab& t) {
         return {
             {"id", t.id}, {"title", t.title}, {"color", t.color},
@@ -57,6 +155,7 @@ namespace {
             // dirty editor reloads from disk and shows a "modified" hint.
             {"editorLanguage", t.editorLanguage},
             {"editorDirty", t.editorDirty},
+            {"paneTree", paneTreeToJson(t.paneTree)},
         };
     }
     Tab tabFromJson(const QJsonObject& o) {
@@ -78,6 +177,7 @@ namespace {
         t.editorPath = o.value("editorPath").toString();
         t.editorLanguage = o.value("editorLanguage").toString();
         t.editorDirty = o.value("editorDirty").toBool();
+        t.paneTree = paneTreeFromJson(o.value("paneTree"));
         return t;
     }
 }
@@ -466,6 +566,106 @@ int AppState::tabGridRows(const QString& tabId) const {
 QVariantMap AppState::tabGridSpans(const QString& tabId) const {
     const int i = indexOfTab(tabs_, tabId);
     return i < 0 ? QVariantMap() : tabs_[i].gridSpans;
+}
+
+/* ─── SPEC-110 — recursive pane tree ─────────────────────────────────────── */
+
+QVariantMap AppState::tabPaneTree(const QString& tabId) const {
+    const int i = indexOfTab(tabs_, tabId);
+    return i < 0 ? QVariantMap() : tabs_[i].paneTree;
+}
+
+QString AppState::splitPane(const QString& tabId,
+                            const QString& targetSessionId,
+                            const QString& axis) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0) return {};
+    if (axis != "vertical" && axis != "horizontal") return {};
+
+    Tab& t = tabs_[i];
+    const QString newSid = newId();
+
+    // First split: promote to a tree if there isn't one yet.
+    if (t.paneTree.isEmpty()) {
+        // Bootstrap from Tab.sessionId — but the caller passes a sessionId
+        // that should match. If they don't match, prefer the caller's
+        // because that's what the QML focused-pane heuristic uses.
+        const QString anchor = targetSessionId.isEmpty() ? t.sessionId : targetSessionId;
+        if (t.sessionId.isEmpty()) t.sessionId = anchor;
+        t.paneTree = {
+            {"split", axis},
+            {"ratio", 0.5},
+            {"first",  QVariantMap{{"leaf", anchor}}},
+            {"second", QVariantMap{{"leaf", newSid}}},
+        };
+    } else {
+        t.paneTree = paneTreeSplit(t.paneTree, targetSessionId, axis, newSid);
+    }
+    // Clear legacy 2-pane fields so they don't double-render.
+    t.splitMode.clear();
+    t.secondSessionId.clear();
+    emit tabSplitChanged(t.id);
+    persistSession();
+    return newSid;
+}
+
+void AppState::closePaneInTree(const QString& tabId,
+                               const QString& targetSessionId) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0 || tabs_[i].paneTree.isEmpty()) return;
+    Tab& t = tabs_[i];
+    const auto next = paneTreeRemove(t.paneTree, targetSessionId);
+
+    // Tree degenerated to a single leaf → store as Tab.sessionId + clear tree.
+    if (next.contains("leaf")) {
+        t.sessionId = next.value("leaf").toString();
+        t.paneTree.clear();
+    } else if (next.isEmpty()) {
+        // Whole tree removed — nothing left. Fall back to a fresh session.
+        t.sessionId = newId();
+        t.paneTree.clear();
+    } else {
+        t.paneTree = next;
+    }
+    emit tabSplitChanged(t.id);
+    persistSession();
+}
+
+void AppState::setPaneRatio(const QString& tabId,
+                            const QVariantList& path,
+                            double ratio) {
+    const int i = indexOfTab(tabs_, tabId);
+    if (i < 0 || tabs_[i].paneTree.isEmpty()) return;
+    ratio = std::clamp(ratio, 0.05, 0.95);
+    Tab& t = tabs_[i];
+
+    // Walk the path, copy-on-write. Recursive lambda since QVariantMap is
+    // a value type — we rebuild the spine of the tree.
+    std::function<QVariantMap(const QVariantMap&, int)> walk =
+        [&](const QVariantMap& node, int depth) -> QVariantMap {
+        if (depth >= path.size() || node.contains("leaf")) {
+            // Reached the target node — overwrite ratio.
+            if (node.contains("split")) {
+                QVariantMap copy = node;
+                copy["ratio"] = ratio;
+                return copy;
+            }
+            return node;
+        }
+        const int step = path.at(depth).toInt();
+        QVariantMap copy = node;
+        if (step == 0) {
+            copy["first"]  = walk(node.value("first").toMap(),  depth + 1);
+        } else {
+            copy["second"] = walk(node.value("second").toMap(), depth + 1);
+        }
+        return copy;
+    };
+    t.paneTree = walk(t.paneTree, 0);
+    // Don't fire tabSplitChanged — the QML splitter is dragging and re-emit
+    // would tear down the tree. Just persist on release (caller calls
+    // setPaneRatio once on onReleased — matches SplitContainer behavior).
+    persistSession();
 }
 
 void AppState::setTabGrid(const QString& tabId, int cols, int rows, const QVariantMap& spans) {

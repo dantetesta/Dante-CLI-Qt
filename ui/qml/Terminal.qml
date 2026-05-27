@@ -1,11 +1,11 @@
-// Active-tab content surface. Picks the right engine per tab.kind:
+// Active-tab content surface. Picks the right engine per tab.kind / state:
 //   • TabKind::Editor (1)        → EditorView (SPEC-021)
+//   • appState.tabPaneTree non-empty → RecursiveSplit (SPEC-110, N panes)
 //   • appState.tabGridCols > 0   → multi-pane GridWorkspace
-//   • otherwise                  → SplitContainer (single pane / 2-pane)
+//   • otherwise                  → SplitContainer (single pane / legacy 2-pane)
 //
 // Re-evaluated whenever AppState fires tabSplitChanged(activeId) or the
-// active tab id changes, so the user sees the new layout immediately on
-// Aplicar / Sair / abrir um arquivo via ⌘O.
+// active tab id changes, so the user sees the new layout immediately.
 import QtQuick 6.5
 import QtQuick.Controls 6.5
 import QtQuick.Layouts 6.5
@@ -16,21 +16,28 @@ Rectangle {
     color: Theme.ink
     focus: true
 
-    // Expose the active SplitContainer so Main.qml shortcuts can drive it.
-    // (null when the tab is in grid or editor mode.)
+    // Exposed so Main.qml shortcuts can call into the active sub-tree.
     property var splitContainer: splitLoader.item
+    property var paneTree: recurseLoader.item
 
-    function cycleTab(delta) {
-        // TODO: implement via tabs model.
-    }
+    /// Focused session id — RecursiveSplit propagates this up via property
+    /// binding so the global Cmd+Shift+W / split shortcuts know which leaf
+    /// to operate on.
+    property string focusedSessionId: appState.activeTabId
+
+    function cycleTab(delta) { /* TODO via tabs model */ }
 
     property int _bump: 0
     readonly property int  kind: (_bump, appState.tabKind(appState.activeTabId))
-    readonly property bool useEditor: kind === 1   // TabKind::Editor
-    readonly property bool useGrid: !useEditor
+    readonly property bool useEditor: kind === 1
+    readonly property bool useTree: !useEditor
+        && (_bump, !appState.tabPaneTree(appState.activeTabId).leaf
+                  && !appState.tabPaneTree(appState.activeTabId).split
+                  ? false : true)
+    readonly property bool useGrid: !useEditor && !useTree
         && (_bump, appState.tabGridCols(appState.activeTabId) > 0
                   && appState.tabGridRows(appState.activeTabId) > 0)
-    readonly property bool useSplit: !useEditor && !useGrid
+    readonly property bool useSplit: !useEditor && !useTree && !useGrid
 
     Connections {
         target: appState
@@ -38,21 +45,21 @@ Rectangle {
         function onTabSplitChanged(changedId) {
             if (changedId === appState.activeTabId) root._bump += 1
         }
-        function onActiveTabIdChanged() { root._bump += 1 }
-        function onTabsChanged()        { root._bump += 1 }
+        function onActiveTabIdChanged() {
+            root._bump += 1
+            // Reset focus to the primary leaf when switching tabs.
+            root.focusedSessionId = appState.tabPrimarySessionId(appState.activeTabId)
+        }
+        function onTabsChanged() { root._bump += 1 }
     }
 
-    // ─── Single / 2-pane split (terminal mode) ───
     Loader {
         id: splitLoader
         anchors.fill: parent
         active: root.useSplit
-        sourceComponent: SplitContainer {
-            tabId: appState.activeTabId
-        }
+        sourceComponent: SplitContainer { tabId: appState.activeTabId }
     }
 
-    // ─── N × M grid workspace ───
     Loader {
         id: gridLoader
         anchors.fill: parent
@@ -64,11 +71,24 @@ Rectangle {
         }
     }
 
-    // ─── Editor pane (SPEC-021) ───
     Loader {
         id: editorLoader
         anchors.fill: parent
         active: root.useEditor
         sourceComponent: EditorView {}
+    }
+
+    // SPEC-110 — recursive pane tree.
+    Loader {
+        id: recurseLoader
+        anchors.fill: parent
+        active: root.useTree
+        sourceComponent: RecursiveSplit {
+            tabId: appState.activeTabId
+            node:  appState.tabPaneTree(appState.activeTabId)
+            path:  []
+            focusedSessionId: root.focusedSessionId
+            onFocusedSessionIdChanged: root.focusedSessionId = focusedSessionId
+        }
     }
 }
